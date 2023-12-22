@@ -68,7 +68,7 @@ class FlatFiltersConfigurationCreateProcessor extends modObjectCreateProcessor
             'varchar' => "`#fieldName#` VARCHAR(50) CHARACTER SET utf8mb4 DEFAULT NULL",
             'int' => "`#fieldName#` INT(10) UNSIGNED DEFAULT NULL",
             'decimal' => " `#fieldName#` DECIMAL(12,2) DEFAULT NULL",
-            'timestamp' => "`#fieldName#` TIMESTAMP(6) NULL DEFAULT NULL",
+            'timestamp' => "`#fieldName#` INT(10) NULL DEFAULT NULL",
             'tinyint' => "`#fieldName#` TINYINT(1) UNSIGNED DEFAULT NULL",
         ];
 

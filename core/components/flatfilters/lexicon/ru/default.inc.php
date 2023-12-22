@@ -23,7 +23,9 @@ $_lang['setting_ff_connector_desc'] = 'по умолчанию ffConnector';
 $_lang['setting_ff_allowed_tpls'] = 'Разрешённые для индексации шаблоны';
 $_lang['setting_ff_allowed_tpls_desc'] = '';
 $_lang['setting_ff_js_path'] = 'Путь JavaScript фронтенда';
-$_lang['setting_ff_js_path_desc'] = '';
+$_lang['setting_ff_js_path_desc'] = 'по умолчанию assets/components/flatfilters/js/web/flatfilters.js';
+$_lang['setting_ff_js_config_path'] = 'Путь JavaScript конфигурации';
+$_lang['setting_ff_js_config_path_desc'] = 'по умолчанию ./flatfilters.inc.js';
 
 $_lang['menu_ff_main_item'] = 'Управление конфигурациями';
 $_lang['ff_title_manage'] = 'Управление конфигурацией';
@@ -39,6 +41,7 @@ $_lang['mgr_ff_btn_clear_all'] = 'Очистить <i class="icon icon-trash"></
 $_lang['mgr_ff_btn_find'] = 'Найти <i class="icon icon-search"></i>';
 $_lang['mgr_ff_btn_select_all'] = 'Выбрать всё';
 $_lang['mgr_ff_btn_close'] = 'Закрыть';
+$_lang['mgr_ff_default_value_desc'] = 'Если нужно задать параметры выборки заранее, используйте поля снизу. При этом фильтры, для которых задано значение по умолчанию, не будут показаны пользователю на фронте.';
 
 $_lang['ff_type_varchar'] = 'Строка';
 $_lang['ff_type_int'] = 'Число';

@@ -42,7 +42,7 @@ class FlatFilters
         if ($statement = $this->modx->query($sql)) {
             $items = $statement->fetchAll(PDO::FETCH_ASSOC);
             foreach ($items as $item) {
-                if (in_array($item['Field'], ['id', 'extended'])) continue;
+                if (in_array($item['Field'], ['id', 'extended','password','salt'])) continue;
                 $output[] = [
                     'key' => $item['Field'],
                     'caption' => $this->modx->lexicon("ff_frontend_{$item['Field']}"),
@@ -66,7 +66,7 @@ class FlatFilters
     {
         $output = [];
         if (!$this->modx->getService('minishop2')) return $output;
-        $sql = "SELECT `key` FROM {$this->table_prefix}ms2_options";
+        $sql = "SELECT `key` FROM {$this->tablePrefix}ms2_options";
         if ($statement = $this->modx->query($sql)) {
             $items = $statement->fetchAll(PDO::FETCH_COLUMN);
             foreach ($items as $item) {
@@ -83,9 +83,10 @@ class FlatFilters
     private function getTVsKeys()
     {
         $output = [];
-        if (!$this->tpls) return $output;
         $q = $this->modx->newQuery('modTemplateVar');
-        $q->where("id IN (SELECT tmplvarid FROM modx_site_tmplvar_templates WHERE templateid IN ({$this->tpls}))");
+        if($this->tpls){
+            $q->where("id IN (SELECT tmplvarid FROM modx_site_tmplvar_templates WHERE templateid IN ({$this->tpls}))");
+        }
         $q->prepare();
         $tvs = $this->modx->getIterator('modTemplateVar', $q);
         foreach ($tvs as $tv) {

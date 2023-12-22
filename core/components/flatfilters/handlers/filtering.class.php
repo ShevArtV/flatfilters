@@ -188,7 +188,7 @@ class  Filtering
 
         $keyStr = "`{$key}`";
         $valStr = "'{$value}'";
-        if (in_array($type, ['daterange', 'date', 'number', 'numrange'])) {
+        if (in_array($type, ['number', 'numrange'])) {
             $keyStr = "CAST(`{$key}` AS DECIMAL)";
             $valStr = "{$value}";
         }

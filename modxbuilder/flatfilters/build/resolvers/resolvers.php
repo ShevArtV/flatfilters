@@ -14,11 +14,5 @@ return [
         [
             'source' => $this->config['resolvers'].'resolver.tables.php'
         ],
-        [
-            'source' => $this->config['resolvers'].'resolver.setup.php'
-        ],
-        [
-            'source' => $this->config['resolvers'].'resolver.statistic.php'
-        ]
     ]
 ];

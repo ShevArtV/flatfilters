@@ -112,6 +112,13 @@ EOD;
                 }
             }
 
+            if(strpos($tableName, 'ff_configurations') !== false){
+                $comment = 'ffConfiguration';
+            }
+            if(strpos($tableName, 'ff_config_resources') !== false){
+                $comment = 'ffConfigResource';
+            }
+
             //Если названия класса нет в комментариях к таблице, то формируем его по общему прицнипу
             $class = trim($comment) == '' ? $this->getClassName($tableName) : $comment;
 

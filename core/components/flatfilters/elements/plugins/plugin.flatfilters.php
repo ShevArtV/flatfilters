@@ -1,6 +1,5 @@
 <?php
-
-require_once MODX_CORE_PATH . 'components/flatfilters/handlers/indexing.class.php';
+include_once MODX_CORE_PATH . 'components/flatfilters/handlers/indexing.class.php';
 $corePath = MODX_CORE_PATH . 'components/flatfilters/';
 $modx->addPackage('flatfilters', $corePath . 'model/');
 
@@ -56,5 +55,16 @@ switch ($modx->event->name) {
     case 'OnLoadWebDocument':
         $jpPath = $modx->getOption('ff_js_path', '', 'assets/components/flatfilters/js/web/flatfilters.js');
         $modx->regClientScript("<script type=\"module\" src=\"{$jpPath}\"></script>", 1);
+        break;
+
+    case 'OnHandleRequest':
+        $basePath = $modx->getOption('base_path');
+        $jsConfigPath = $modx->getOption('ff_js_config_path', '', './flatfilters.inc.js');
+        $cookies = $_COOKIE['FlatFilters'] ? json_decode($_COOKIE['FlatFilters'],1) : [];
+        $data = [
+            'ffJsConfigPath' => $jsConfigPath
+        ];
+        $data = array_merge($cookies, $data);
+        setcookie('FlatFilters', json_encode($data), 0, '/');
         break;
 }

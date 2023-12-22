@@ -155,8 +155,7 @@
                     </div>
                     <div class="col-12 position-relative">
                         <p class="form-text mb-1">
-                            Если нужно задать параметры выборки заранее, используйте поля снизу.
-                            При этом фильтры, для которых заданы сравнение и значение по умолчанию, не будут показаны пользователю на фронте.
+                            {'mgr_ff_default_value_desc' | lexicon}
                         </p>
                     </div>
                     <div class="col-12 mb-3 position-relative">

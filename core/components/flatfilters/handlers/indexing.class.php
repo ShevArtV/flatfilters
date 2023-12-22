@@ -79,7 +79,8 @@ class Indexing
                 $arrays[$key] = $value;
             } else {
                 if ($key !== 'rid' && $filters[$key]['field_type'] === 'timestamp') {
-                    $value = $value ? strtotime($value) : strtotime('1970');
+                    $value = $value?:'1970';
+                    $value = is_string($value) ? strtotime($value) : $value;
                 }
                 $indexes[$key] = $value;
             }
@@ -91,7 +92,8 @@ class Indexing
                 $combination = array_merge($indexes, $combination);
                 foreach ($combination as $key => $val) {
                     if ($key !== 'rid' && $filters[$key]['field_type'] === 'timestamp') {
-                        $combination[$key] = $val ? strtotime($val) : strtotime('1970');
+                        $val = $val?:'1970';
+                        $combination[$key] = is_string($val) ? strtotime($val) : $val;
                     }
                     if (!is_array($val)) continue;
                     foreach ($val as $k => $v) {

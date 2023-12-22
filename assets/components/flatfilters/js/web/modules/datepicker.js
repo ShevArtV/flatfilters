@@ -75,8 +75,8 @@ export default class DatePicker {
     }
 
     createDatepicker(el) {
-        const min = new Date(el.dataset[this.config.minKey]);
-        const max = new Date(el.dataset[this.config.maxKey]);
+        const min = new Date(Number(`${el.dataset[this.config.minKey]}000`));
+        const max = new Date(Number(`${el.dataset[this.config.maxKey]}000`));
         const dp = new AirDatepicker(el, {
             position: 'bottom center',
             dateFormat: 'dd.MM.yyyy HH:mm',
