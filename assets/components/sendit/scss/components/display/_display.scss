@@ -1,0 +1,43 @@
+.d_block {
+  display: block !important;
+}
+.d_flex {
+  display: flex !important;
+}
+.d_grid {
+  display: grid !important;
+}
+.d_inline {
+  display: inline !important;
+}
+
+.d_inline-block {
+  display: inline-block !important;
+}
+
+.d_none {
+  display: none !important;
+}
+
+@each $k, $v in $breakpoints {
+  @media (min-width: $v) {
+    .d_#{$k}_block {
+      display: block !important;
+    }
+    .d_#{$k}_flex {
+      display: flex !important;
+    }
+    .d_#{$k}_grid {
+      display: grid !important;
+    }
+    .d_#{$k}_inline {
+      display: inline !important;
+    }
+    .d_#{$k}_inline-block {
+      display: inline-block !important;
+    }
+    .d_#{$k}_none {
+      display: none !important;
+    }
+  }
+}

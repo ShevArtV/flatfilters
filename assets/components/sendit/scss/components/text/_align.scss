@@ -1,0 +1,77 @@
+.ta_center{
+  text-align: center;
+}
+.ta_left{
+  text-align: left;
+}
+.ta_right{
+  text-align: right;
+}
+.ta_justify{
+  text-align: justify;
+}
+.va_middle{
+  vertical-align: middle;
+}
+.va_sub{
+  vertical-align: sub;
+}
+.va_baseline{
+  vertical-align: baseline;
+}
+.va_top{
+  vertical-align: top;
+}
+.va_super{
+  vertical-align: super;
+}
+.va_bottom{
+  vertical-align: baseline;
+}
+.va_text-bottom{
+  vertical-align: text-bottom;
+}
+.va_text-top{
+  vertical-align: text-top;
+}
+
+@each $k, $v in $breakpoints{
+  @media (min-width: $v){
+    .ta_#{$k}_center{
+      text-align: center;
+    }
+    .ta_#{$k}_left{
+      text-align: left;
+    }
+    .ta_#{$k}_right{
+      text-align: right;
+    }
+    .ta_#{$k}_justify{
+      text-align: justify;
+    }
+    .va_#{$k}_middle{
+      vertical-align: middle;
+    }
+    .va_#{$k}_sub{
+      vertical-align: sub;
+    }
+    .va_#{$k}_baseline{
+      vertical-align: baseline;
+    }
+    .va_#{$k}_top{
+      vertical-align: top;
+    }
+    .va_#{$k}_super{
+      vertical-align: super;
+    }
+    .va_#{$k}_bottom{
+      vertical-align: baseline;
+    }
+    .va_#{$k}_text-bottom{
+      vertical-align: text-bottom;
+    }
+    .va_#{$k}_text-top{
+      vertical-align: text-top;
+    }
+  }
+}

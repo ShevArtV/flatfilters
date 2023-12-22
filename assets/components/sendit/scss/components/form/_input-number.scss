@@ -1,0 +1,47 @@
+.input-number{
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  column-gap: clamp(10px,#{math.div(1500, $layout-width)}vw,15px);
+}
+.input-number__emulator{
+  font-size: clamp(12px, #{math.div(1400, $layout-width)}vw, 14px);
+  font-family: 'Proxima Nova Bold', sans-serif;
+  border-radius: 50%;
+  background-color: var(--primary);
+  width: 3.25em;
+  height: 3.25em;
+  text-align: center;
+  border: none;
+  &:focus{
+    @include shadow();
+    outline: none;
+  }
+}
+.input-number__btn{
+  display: block;
+  height: 14px;
+  width: 14px;
+  border:none;
+  position: relative;
+  cursor: pointer;
+  background-color: transparent;
+}
+.input-number__btn::before, .input-number__btn::after{
+  position: absolute;
+}
+
+.input-number__plus::before, .input-number__minus::before, .input-number__plus::after{
+  content: '';
+  display: block;
+  width: 100%;
+  height: 4px;
+  background-color: #000;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+}
+.input-number__plus::after{
+  transform: translate(-50%,-50%) rotate(90deg);
+  transform-origin: center;
+}

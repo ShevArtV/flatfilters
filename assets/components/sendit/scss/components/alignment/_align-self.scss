@@ -1,0 +1,29 @@
+.as_stretch{
+  align-self: stretch;
+}
+.as_start{
+  align-self: start;
+}
+.as_end{
+  align-self: end;
+}
+.as_center{
+  align-self: center;
+}
+
+@each $k, $v in $breakpoints{
+  @media (min-width: $v){
+    .as_#{$k}_stretch{
+      align-self: stretch;
+    }
+    .as_#{$k}_start{
+      align-self: start;
+    }
+    .as_#{$k}_end{
+      align-self: end;
+    }
+    .as_#{$k}_center{
+      align-self: center;
+    }
+  }
+}

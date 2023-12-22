@@ -1,0 +1,11 @@
+@each $k, $v in $font-sizes-clamp {
+  .fs-#{$k}{
+    font-size: clamp(#{nth($v, 2)}px, #{math.div(nth($v, 1) * 100, $layout-width)}vw,#{nth($v, 1)}px);
+  }
+}
+
+@each $k, $v in $font-sizes-fix {
+  .fs-#{$k}{
+    font-size: #{$v}px;
+  }
+}

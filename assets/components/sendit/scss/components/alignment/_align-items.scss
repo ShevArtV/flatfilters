@@ -1,0 +1,29 @@
+.ai_stretch{
+  align-items: stretch;
+}
+.ai_start{
+  align-items: flex-start;
+}
+.ai_end{
+  align-items: flex-end;
+}
+.ai_center{
+  align-items: center;
+}
+
+@each $k, $v in $breakpoints{
+  @media (min-width: $v){
+    .ai_#{$k}_stretch{
+      align-items: stretch;
+    }
+    .ai_#{$k}_start{
+      align-items: flex-start;
+    }
+    .ai_#{$k}_end{
+      align-items: flex-end;
+    }
+    .ai_#{$k}_center{
+      align-items: center;
+    }
+  }
+}

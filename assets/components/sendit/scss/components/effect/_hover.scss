@@ -1,0 +1,54 @@
+@each $k, $v in $base-colors {
+  .hover_border_#{$k}_d {
+    transition: all #{$transition-duration}s;
+    &:hover{
+      background-color: transparent;
+      border-color: var(--#{$k}-d);
+    }
+  }
+  .hover_border_#{$k} {
+    transition: all #{$transition-duration}s;
+    &:hover{
+      background-color: transparent;
+      border-color: var(--#{$k});
+    }
+  }
+  .hover_bg_#{$k} {
+    transition: all #{$transition-duration}s;
+    &:hover{
+      background-color: var(--#{$k});
+    }
+  }
+  .hover_bg_#{$k}_d {
+    transition: all #{$transition-duration}s;
+    &:hover{
+      background-color: var(--#{$k}-d);
+    }
+  }
+  .hover_bg_#{$k}_w {
+    transition: all #{$transition-duration}s;
+    &:hover{
+      background-color: var(--#{$k}-w);
+    }
+  }
+  .hover_color_#{$k} {
+    transition: all #{$transition-duration}s;
+    &:hover{
+      color: var(--#{$k});
+    }
+  }
+  .hover_shadow_#{$k} {
+    transition: all #{$transition-duration}s;
+    &:hover{
+      box-shadow: 0 0 6px 4px var(--#{$k}-op-80);
+    }
+  }
+  @for $i from 1 through 10 {
+    .bg_#{$k}_op-#{$i * 10} {
+      transition: all #{$transition-duration}s;
+      &:hover{
+        background-color: var(--#{$k});
+      }
+    }
+  }
+}

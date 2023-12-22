@@ -1,0 +1,132 @@
+@each $k1, $v1 in $offsets-clamp{
+  .m-#{$k1}{
+    margin: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .mx-#{$k1}{
+    margin-left: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+    margin-right: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .my-#{$k1}{
+    margin-top: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+    margin-bottom: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .ml-#{$k1}{
+    margin-left: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .mr-#{$k1}{
+    margin-right: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .mt-#{$k1}{
+    margin-top: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .mb-#{$k1}{
+    margin-bottom: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+}
+.mx_auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ml_auto {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.mr_auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+@for $i from 0 through $offsets {
+  .m-#{$i * $offsets-step} {
+    margin: #{$i * $offsets-step}px;
+  }
+  .mx-#{$i * $offsets-step} {
+    margin-left: #{$i * $offsets-step}px;
+    margin-right: #{$i * $offsets-step}px
+  }
+  .my-#{$i * $offsets-step} {
+    margin-bottom: #{$i * $offsets-step}px;
+    margin-top: #{$i * $offsets-step}px
+  }
+  .mt-#{$i * $offsets-step} {
+    margin-top: #{$i * $offsets-step}px;
+  }
+  .mr-#{$i * $offsets-step} {
+    margin-right: #{$i * $offsets-step}px;
+  }
+  .mb-#{$i * $offsets-step} {
+    margin-bottom: #{$i * $offsets-step}px;
+  }
+  .ml-#{$i * $offsets-step} {
+    margin-left: #{$i * $offsets-step}px;
+  }
+}
+
+@each $k, $v in $breakpoints {
+  @media (min-width: $v) {
+    .mx_#{$k}_auto {
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .ml_#{$k}_auto {
+      margin-left: auto;
+      margin-right: 0;
+    }
+    .mr_#{$k}_auto {
+      margin-left: 0;
+      margin-right: auto;
+    }
+    @for $i from 0 through $offsets {
+      .m_#{$k}-#{$i * $offsets-step} {
+        margin: #{$i * $offsets-step}px;
+      }
+      .mx_#{$k}-#{$i * $offsets-step} {
+        margin-left: #{$i * $offsets-step}px;
+        margin-right: #{$i * $offsets-step}px
+      }
+      .my_#{$k}-#{$i * $offsets-step} {
+        margin-bottom: #{$i * $offsets-step}px;
+        margin-top: #{$i * $offsets-step}px
+      }
+      .mt_#{$k}-#{$i * $offsets-step} {
+        margin-top: #{$i * $offsets-step}px;
+      }
+      .mr_#{$k}-#{$i * $offsets-step} {
+        margin-right: #{$i * $offsets-step}px;
+      }
+      .mb_#{$k}-#{$i * $offsets-step} {
+        margin-bottom: #{$i * $offsets-step}px;
+      }
+      .ml_#{$k}-#{$i * $offsets-step} {
+        margin-left: #{$i * $offsets-step}px;
+      }
+    }
+    @each $k1, $v1 in $offsets-clamp{
+      .m_#{$k}-#{$k1}{
+        margin: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .mx_#{$k}-#{$k1}{
+        margin-left: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+        margin-right: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .my_#{$k}-#{$k1}{
+        margin-top: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+        margin-bottom: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .ml_#{$k}-#{$k1}{
+        margin-left: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .mr_#{$k}-#{$k1}{
+        margin-right: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .mt_#{$k}-#{$k1}{
+        margin-top: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .mb_#{$k}-#{$k1}{
+        margin-bottom: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+    }
+  }
+}

@@ -1,0 +1,72 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:root{
+  @each $k, $v in $base-colors {
+    --#{$k} : #{$v};
+    --#{$k}-d :#{color.adjust($v, $blackness: 25%)};
+    --#{$k}-w :#{color.adjust($v, $whiteness: 25%)};
+    @for $i from 1 through 10 {
+      --#{$k}-op-#{$i * 10}: #{color.adjust($v, $alpha: math.div(-1 * $i, 10))};
+    }
+  }
+  --plyr-color-main: #{map-get($base-colors, 'secondary')}
+}
+:root.dark{
+  @each $k, $v in $base-colors-dark {
+    --#{$k} : #{$v};
+    --#{$k}-d :#{color.adjust($v, $blackness: 25%)};
+    --#{$k}-w :#{color.adjust($v, $whiteness: 25%)};
+    @for $i from 1 through 10 {
+      --#{$k}-op-#{$i * 10}: #{color.adjust($v, $alpha: math.div(-1 * $i, 10))};
+    }
+  }
+  --plyr-color-main: #{map-get($base-colors-dark, 'secondary')}
+}
+
+body {
+  color: var(--main);
+  background-color: var(--body);
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6, p, small {
+  font-weight: 400;
+}
+
+label{
+  cursor: pointer;
+}
+
+@media (min-width: #{map-get($breakpoints, 'sm')}){
+  *{
+    scrollbar-color: var(--primary) var(--back);
+    scrollbar-width: thin;
+
+    /* width */
+    &::-webkit-scrollbar {
+      width: 8px;
+      border-radius: 15px;
+    }
+
+    /* Track */
+    &::-webkit-scrollbar-track {
+      background: var(--back);
+      border-radius: 15px;
+    }
+
+    /* Handle */
+    &::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 15px;
+    }
+
+    /* Handle on hover */
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--secondary);
+    }
+  }
+}

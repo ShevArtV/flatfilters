@@ -1,0 +1,8 @@
+@each $k, $v in $base-colors {
+  .focus_shadow_#{$k} {
+    transition: all #{$transition-duration}s;
+    &:focus, &:active{
+      box-shadow: 0 0 6px 4px #{color.adjust(map-get($base-colors, $k), $alpha: -0.8)};
+    }
+  }
+}

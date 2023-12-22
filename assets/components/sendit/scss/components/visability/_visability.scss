@@ -1,0 +1,18 @@
+.v_hidden {
+  @include hidden;
+}
+
+.v_visible {
+  @include visible;
+}
+
+@each $k, $v in $breakpoints {
+  @media (min-width: $v) {
+    .v_hidden_#{$k} {
+      @include hidden;
+    }
+    .v_visible_#{$k} {
+      @include visible;
+    }
+  }
+}

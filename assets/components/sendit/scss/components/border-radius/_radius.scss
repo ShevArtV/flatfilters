@@ -1,0 +1,15 @@
+@each $k, $v in $border-radius {
+  .radius_#{$k}{
+    border-radius: #{$v};
+  }
+}
+
+@each $k, $v in $breakpoints{
+  @media (min-width: $v){
+    @each $k1, $v1 in $border-radius {
+      .radius_#{$k}_#{$k1}{
+        border-radius: #{$v1};
+      }
+    }
+  }
+}

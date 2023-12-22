@@ -1,0 +1,7 @@
+.container{
+  max-width: $container-max-width;
+  margin: 0 auto;
+  flex-grow: 1;
+  position: relative;
+  z-index: 1;
+}

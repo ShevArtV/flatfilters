@@ -1,0 +1,11 @@
+@each $k, $v in $base-colors {
+  .bs_small_#{$k}{
+    box-shadow: 0 0 6px 4px var(--#{$k}-op-80);
+  }
+  .bs_middle_#{$k}{
+    box-shadow: 0 0 10px 5px var(--#{$k}-op-80);
+  }
+  .bs_big_#{$k}{
+    box-shadow: 0 0 20px 10px var(--#{$k}-op-80);
+  }
+}

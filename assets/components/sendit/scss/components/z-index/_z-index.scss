@@ -1,0 +1,8 @@
+@for $i from 0 through 10{
+  .zi-#{$i}{
+    z-index: #{$i};
+  }
+}
+.zi_m-1{
+  z-index: -1;
+}

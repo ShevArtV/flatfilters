@@ -1,0 +1,18 @@
+.img{
+  max-width: 100%;
+  height: auto;
+}
+
+.img_cover{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.img_contain{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}

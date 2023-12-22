@@ -1,0 +1,44 @@
+.btn {
+  border: none;
+  background: none;
+  box-shadow: none;
+  outline: none;
+  max-width: 100%;
+  min-width: max-content;
+  color: inherit;
+  transition: all #{$transition-duration}s;
+  text-decoration: none;
+  display: inline-block;
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+.btn[class*="grid__col"], .btn[class*="flex__col"], [class*="grid__col"] .btn, [class*="flex__col"] .btn {
+  min-width: unset;
+}
+
+.btn:disabled, .btn_disabled {
+  @include disabled;
+}
+
+@each $k, $v in $button-paddings {
+  .btn_#{$k} {
+    padding: #{$v};
+  }
+}
+
+.btn-more {
+  margin: unset !important;
+}
+
+.btn_menu {
+  padding: .4em 1em;
+}
+
+@media (min-width: #{map-get($breakpoints, 'sm')}) {
+  .btn_menu {
+    padding: .5em 2em;
+  }
+}

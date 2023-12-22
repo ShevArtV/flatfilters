@@ -1,0 +1,41 @@
+.overflow_hidden{
+  overflow: hidden;
+}
+.overflow_hidden-x{
+  overflow-x: hidden;
+}
+.overflow_hidden-y{
+  overflow-y: hidden;
+}
+.overflow_visible{
+  overflow: visible;
+}
+.overflow_visible-x{
+  overflow-x: visible;
+}
+.overflow_visible-y{
+  overflow-y: visible;
+}
+
+@each $k, $v in $breakpoints{
+  @media (min-width: $v){
+    .overflow_#{$k}_hidden{
+      overflow: hidden;
+    }
+    .overflow_#{$k}_hidden-x{
+      overflow-x: hidden;
+    }
+    .overflow_#{$k}_hidden-y{
+      overflow-y: hidden;
+    }
+    .overflow_#{$k}_visible{
+      overflow: visible;
+    }
+    .overflow_#{$k}_visible-x{
+      overflow-x: visible;
+    }
+    .overflow_#{$k}_visible-y{
+      overflow-y: visible;
+    }
+  }
+}

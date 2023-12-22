@@ -1,0 +1,108 @@
+@each $k1, $v1 in $offsets-clamp{
+  .p-#{$k1}{
+    padding: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .px-#{$k1}{
+    padding-left: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+    padding-right: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .py-#{$k1}{
+    padding-top: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+    padding-bottom: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .pl-#{$k1}{
+    padding-left: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .pr-#{$k1}{
+    padding-right: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .pt-#{$k1}{
+    padding-top: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+  .pb-#{$k1}{
+    padding-bottom: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+  }
+}
+
+@for $i from 0 through $offsets {
+  .p-#{$i * $offsets-step} {
+    padding: #{$i * $offsets-step}px;
+  }
+  .px-#{$i * $offsets-step} {
+    padding-left: #{$i * $offsets-step}px;
+    padding-right: #{$i * $offsets-step}px
+  }
+  .py-#{$i * $offsets-step} {
+    padding-bottom: #{$i * $offsets-step}px;
+    padding-top: #{$i * $offsets-step}px
+  }
+  .pt-#{$i * $offsets-step} {
+    padding-top: #{$i * $offsets-step}px;
+  }
+  .pr-#{$i * $offsets-step} {
+    padding-right: #{$i * $offsets-step}px;
+  }
+  .pb-#{$i * $offsets-step} {
+    padding-bottom: #{$i * $offsets-step}px;
+  }
+  .pl-#{$i * $offsets-step} {
+    padding-left: #{$i * $offsets-step}px;
+  }
+
+
+}
+
+@each $k, $v in $breakpoints {
+  @media (min-width: $v) {
+    @for $i from 0 through $offsets {
+      .p_#{$k}-#{$i * $offsets-step} {
+        padding: #{$i * $offsets-step}px;
+      }
+      .px_#{$k}-#{$i * $offsets-step} {
+        padding-left: #{$i * $offsets-step}px;
+        padding-right: #{$i * $offsets-step}px
+      }
+      .py_#{$k}-#{$i * $offsets-step} {
+        padding-bottom: #{$i * $offsets-step}px;
+        padding-top: #{$i * $offsets-step}px
+      }
+      .pt_#{$k}-#{$i * $offsets-step} {
+        padding-top: #{$i * $offsets-step}px;
+      }
+      .pr_#{$k}-#{$i * $offsets-step} {
+        padding-right: #{$i * $offsets-step}px;
+      }
+      .pb_#{$k}-#{$i * $offsets-step} {
+        padding-bottom: #{$i * $offsets-step}px;
+      }
+      .pl_#{$k}-#{$i * $offsets-step} {
+        padding-left: #{$i * $offsets-step}px;
+      }
+    }
+    @each $k1, $v1 in $offsets-clamp{
+      .p_#{$k}-#{$k1}{
+        padding: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .px_#{$k}-#{$k1}{
+        padding-left: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+        padding-right: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .py_#{$k}-#{$k1}{
+        padding-top: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+        padding-bottom: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .pl_#{$k}-#{$k1}{
+        padding-left: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .pr_#{$k}-#{$k1}{
+        padding-right: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .pt_#{$k}-#{$k1}{
+        padding-top: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+      .pb_#{$k}-#{$k1}{
+        padding-bottom: clamp(#{nth($v1,2)}px, #{math.div(nth($v1,1) * 100, $layout-width)}vw, #{nth($v1,1)}px);
+      }
+    }
+  }
+}

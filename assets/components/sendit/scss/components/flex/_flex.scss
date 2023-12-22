@@ -1,0 +1,30 @@
+.flex_wrap{
+  flex-wrap: wrap;
+}
+.flex_nowrap{
+  flex-wrap: nowrap;
+}
+.flex_column{
+  flex-direction: column;
+}
+.flex_row{
+  flex-direction: row;
+}
+@each $k, $v in $breakpoints{
+  @media (min-width: $v){
+    .flex_#{$k}_wrap{
+      flex-wrap: wrap;
+    }
+    .flex_#{$k}_nowrap{
+      flex-wrap: nowrap;
+    }
+    .flex_#{$k}_column{
+      flex-direction: column;
+    }
+    .flex_#{$k}_row{
+      flex-direction: row;
+    }
+  }
+}
+
+@import "column";
