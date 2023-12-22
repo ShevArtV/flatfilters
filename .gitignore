@@ -1,0 +1,17 @@
+# Project exclude paths
+/dev/node_modules/
+/assets/components/pdotools/
+/assets/components/sendit/
+/core/xpdo/
+/core/model/
+/core/elements/
+/core/config/
+/manager/
+/temp/
+/.idea/
+/.htaccess
+/config.core.php
+/connectors/
+/core/components/minishop2/
+/core/components/pdotools/
+/core/components/sendit/
