@@ -1,5 +1,0 @@
-@each $k, $v in $text-decorations {
-  .td_#{$k}{
-    text-decoration: $v;
-  }
-}

@@ -1,5 +1,0 @@
-@for $i from 0 through 10{
-  .op-#{$i * 10}{
-    opacity: #{$i * .1};
-  }
-}
