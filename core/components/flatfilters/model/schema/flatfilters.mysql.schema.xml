@@ -4,7 +4,7 @@
 		<field key="resource_id" dbtype="int" precision="10" attributes="unsigned" phptype="integer" null="false" index="index" />
 		<field key="config_id" dbtype="int" precision="10" attributes="unsigned" phptype="integer" null="false" />
 
-		<index alias="pair" name="pair" primary="false" unique="true" type="BTREE" >
+		<index alias="item" name="item" primary="false" unique="true" type="BTREE" >
 			<column key="resource_id" length="" collation="A" null="false" />
 			<column key="config_id" length="" collation="A" null="false" />
 		</index>
@@ -17,5 +17,7 @@
 		<field key="default_filters" dbtype="text" phptype="string" null="true" />
 		<field key="offset" dbtype="int" precision="10" attributes="unsigned" phptype="integer" null="false" default="0" />
 		<field key="total" dbtype="int" precision="10" attributes="unsigned" phptype="integer" null="true" />
+		<field key="type" dbtype="varchar" precision="50" phptype="string" null="false" default="resources" />
+		<field key="groups" dbtype="varchar" precision="100" phptype="string" null="true" />
 	</object>
 </model>

@@ -15,19 +15,28 @@ class FlatFiltersConfigurationManageManagerController extends modExtraManagerCon
     public function getItemData($id)
     {
         $output = [];
-        $pdoTools = $this->modx->getService('pdoTools');
+        $output['type'] = $_GET['type'];
         $tplPath = MODX_CORE_PATH . 'components/flatfilters/templates/mgr/';
         $tplFilter = '@INLINE ' . file_get_contents($tplPath . 'chunks/filter_table_row.tpl');
+
         if ($object = $this->modx->getObject('ffConfiguration', $id)) {
             $output = $object->toArray();
             $filters = json_decode($output['filters'],1);
             $filtersHtml = '';
             foreach ($filters as $filter){
-                $filtersHtml .= $pdoTools->parseChunk($tplFilter,$filter);
+                $filtersHtml .= $this->pdoTools->parseChunk($tplFilter,$filter);
             }
             $output['filters'] = $filters;
             $output['filtersHtml'] = $filtersHtml;
         }
+
+        $output['show_parents_for'] = explode(',', $this->modx->getOption('ff_show_parents_panel_for', '', 'resources,products'));
+        $output['show_groups_for'] = explode(',', $this->modx->getOption('ff_show_groups_panel_for', '', 'customers'));
+
+        $defaultName = $this->modx->lexicon('mgr_ff_default_name');
+        $output['title'] = $this->modx->lexicon('mgr_ff_item_title', ['name' => $output['name']?:$defaultName]);
+        $output['back_url'] = $this->modx->getOption('manager_url') . '?a=getconfigurations&namespace=flatfilters';
+
         return $output;
     }
 
@@ -37,21 +46,20 @@ class FlatFiltersConfigurationManageManagerController extends modExtraManagerCon
         $assetsBaseUrl = MODX_ASSETS_URL . 'components/flatfilters/';
         $assetsUrl = $assetsBaseUrl . 'js/';
         $tplPath = MODX_CORE_PATH . 'components/flatfilters/templates/mgr/';
-        $pdoTools = $this->modx->getService('pdoTools');
+        $this->pdoTools = $FF->pdoTools;
         $data = $this->getItemData((int)$_GET['id']);
+        $data['types'] = $FF->types;
         $tpl_html = '@INLINE ' . file_get_contents($tplPath . 'configuration_manage.tpl');
-        $defaultName = $this->modx->lexicon('mgr_ff_default_name');
-        $data['title'] = $this->modx->lexicon('mgr_ff_item_title', ['name' => $data['name']?:$defaultName]);
-        $data['back_url'] = $this->modx->getOption('manager_url') . '?a=getconfigurations&namespace=flatfilters';
-        $template = $pdoTools->parseChunk($tpl_html, $data);
+        $template = $this->pdoTools->parseChunk($tpl_html, $data);
         $config = json_encode([
             'connector_url' => $assetsBaseUrl . 'connector.php',
             'template' => $template,
             'token' => $this->modx->user->getUserToken($this->modx->context->get('key')),
-            'filters_keys' => $FF->getFieldsKeys(),
+            'filters_keys' => $FF->getFieldsKeys($data['type']),
             'storage' => [
                 'filters' => $data['filters'] ?: false,
-                'parents' => $data['parents']
+                'parents' => $data['parents'],
+                'groups' => $data['groups']
             ]
         ]);
         //$this->modx->log(1, print_r($FF->getFieldsKeys(),1));
@@ -71,4 +79,5 @@ Ext.onReady(function(){
 HTML
         );
     }
+
 }

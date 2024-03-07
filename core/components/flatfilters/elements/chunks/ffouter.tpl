@@ -25,7 +25,7 @@
         <button type="button" class="btn btn-primary" data-pn-first="1">&#10094;&#10094;</button>
         <button type="button" class="btn btn-primary" data-pn-prev>&#10094;</button>
         <input type="number" name="page" data-pn-current form="filterForm" min="0" max="{$totalPages}" value="{$.get.page?:1}">
-        <input type="hidden" name="limit" form="filterForm" value="12">
+        <input type="hidden" name="limit" form="filterForm" value="{$limit}">
         <span data-pn-total>{$totalPages}</span>
         <button type="button" class="btn btn-primary" data-pn-next>&#10095;</button>
         <button type="button" class="btn btn-primary" data-pn-last="{$totalPages}">&#10095;&#10095;</button>

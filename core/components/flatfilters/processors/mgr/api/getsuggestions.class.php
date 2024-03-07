@@ -18,12 +18,13 @@ class FlatFiltersGetSuggestionsProcessor extends modObjectGetListProcessor
         $start = intval($this->getProperty('start', 0));
         $sortDir = $this->getProperty('dir' ,'ASC');
         $value = $this->getProperty('value');
-        $fields = $this->getProperty('fields', 'pagetitle');
+        $this->classKey = $this->getProperty('class') ?? $this->classKey;
+        $fields = $this->getProperty('fields', 'id');
         $fields = explode(',', $fields);
 
         /* query for chunks */
         $c = $this->modx->newQuery($this->classKey);
-        $c->select($this->modx->getSelectColumns('modResource', 'modResource'));
+        $c->select($this->modx->getSelectColumns($this->classKey, $this->classKey));
 
         if((int)$value){
             $c->where(array('id' => (int)$value));
@@ -55,7 +56,7 @@ class FlatFiltersGetSuggestionsProcessor extends modObjectGetListProcessor
         $c->prepare();
         $c->stmt->execute();
         $data['results'] = $c->stmt->fetchAll(\PDO::FETCH_ASSOC);
-        //$this->modx->log(1, print_r($data,1));
+        //$this->modx->log(1, print_r($c->toSQL(),1));
         return $data;
     }
 

@@ -8,5 +8,7 @@
  * @property string $default_filters
  * @property integer $offset
  * @property integer $total
+ * @property string $type
+ * @property string $groups
  */
 class ffConfiguration extends xPDOSimpleObject {}

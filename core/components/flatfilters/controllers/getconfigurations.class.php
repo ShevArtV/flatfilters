@@ -14,7 +14,7 @@ class FlatFiltersGetConfigurationsManagerController extends modExtraManagerContr
 
     public function loadCustomCssJs()
     {
-        $this->modx->getService('flatfilters', 'Flatfilters', MODX_CORE_PATH . 'components/flatfilters/');
+        $FF = $this->modx->getService('flatfilters', 'Flatfilters', MODX_CORE_PATH . 'components/flatfilters/');
         $otherProps = array(
             'processors_path' => MODX_CORE_PATH . 'components/flatfilters/processors/'
         );
@@ -28,13 +28,12 @@ class FlatFiltersGetConfigurationsManagerController extends modExtraManagerContr
         $params = array_merge($scriptProps, json_decode($response->response,1));
         $params['page_total'] = ceil($params['total'] / $params['limit']);
         $params['last_on_page'] = $params['total'] < $params['limit'] ? $params['total'] : $params['limit'];
-
+        $params['types'] = $FF->types;
         $assetsBaseUrl = MODX_ASSETS_URL . 'components/flatfilters/';
         $assetsUrl = $assetsBaseUrl . 'js/';
         $tplPath = MODX_CORE_PATH . 'components/flatfilters/templates/mgr/';
         $tpl_html = '@INLINE ' .  file_get_contents($tplPath. 'list.tpl');
-        $pdoTools = $this->modx->getService('pdoTools');
-        $template = $pdoTools->parseChunk($tpl_html, $params);
+        $template = $FF->pdoTools->parseChunk($tpl_html, $params);
         $config = json_encode([
             'connector_url' => $assetsBaseUrl . 'connector.php',
             'template' => $template,
@@ -45,6 +44,7 @@ class FlatFiltersGetConfigurationsManagerController extends modExtraManagerContr
         $this->addCss($assetsBaseUrl . 'css/mgr/main.min.css');
         $this->addCss($assetsBaseUrl . 'css/mgr/swal.min.css');
         $this->addJavascript($assetsBaseUrl . 'js/libs/bootstrap.bundle.min.js');
+        $this->addJavascript($assetsBaseUrl . 'js/libs/sweetalert2.js');
 
         $this->addHtml(<<<HTML
 

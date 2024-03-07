@@ -3,6 +3,7 @@ export default class SaveFormData {
         if(window.SendIt && window.SendIt.SaveFormData) return window.SendIt.SaveFormData;
         const defaults = {
             rootSelector: '[data-si-form]',
+            noSaveSelector: '[data-si-nosave]',
             rootKey: 'siForm',
             resetEvent: 'si:send:reset'
         }
@@ -30,6 +31,7 @@ export default class SaveFormData {
 
         document.addEventListener('change', (e) => {
             if (e.target.closest(this.config.rootSelector) && ['select', 'input', 'textarea'].includes(e.target.tagName.toLowerCase())) {
+                if(e.target.closest(this.config.noSaveSelector)) return;
                 this.saveData(e.target);
             }
         });
@@ -93,9 +95,9 @@ export default class SaveFormData {
     setValues(root) {
         const savedData = JSON.parse(localStorage.getItem(root.dataset[this.config.rootKey]));
         const formFields = root.querySelectorAll('input,select,textarea');
-        if (!savedData || !formFields) return;
+        if (!savedData || !formFields || root.closest(this.config.noSaveSelector)) return;
 
-        if (!document.dispatchEvent(new CustomEvent(this.events.set, {
+        if (!document.dispatchEvent(new CustomEvent(this.events.setBefore, {
             bubbles: true,
             cancelable: true,
             detail: {

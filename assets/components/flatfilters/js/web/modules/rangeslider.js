@@ -4,7 +4,7 @@ export default class RangeSlider {
         const defaults = {
             jsPath: 'assets/components/flatfilters/js/web/libs/nouislider/nouislider.min.js',
             cssPath: 'assets/components/flatfilters/css/web/libs/nouislider/nouislider.css',
-            formSelector: '[data-si-form]',
+            formSelector: '[data-ff-form]',
             rangeSelector: '[data-ff-range]',
             rangeSelectorAlt: '[data-ff-range="${key}"]',
             rangeKey: 'ffRange',
@@ -74,6 +74,8 @@ export default class RangeSlider {
     }
 
     createRange(el){
+        if(typeof noUiSlider === 'undefined') return;
+
         const {min, max, startField, endField, start, end} = this.getItems(el.dataset[this.config.rangeKey]);
 
         noUiSlider.create(el, {

@@ -5,26 +5,26 @@ require_once MODX_CORE_PATH . 'components/flatfilters/handlers/indexing.class.ph
 class FlatFiltersConfigurationIndexingProcessor extends modProcessor
 {
 
-    public function initialize() {
-
-        $corePath = MODX_CORE_PATH . 'components/flatfilters/';
+    public function initialize()
+    {
         $this->tablePrefix = $this->modx->getOption('table_prefix', '', 'modx_');
-        $this->modx->addPackage('flatfilters', $corePath.'model/');
+        $this->ff = $this->modx->getService('flatfilters', 'Flatfilters', MODX_CORE_PATH . 'components/flatfilters/');;
         $this->modx->lexicon->load('flatfilters:default');
 
         return parent::initialize();
     }
 
-    public function process(){
+    public function process()
+    {
         $total = 0;
         $offset = 0;
         $properties = $this->getProperties();
 
-        if($config = $this->modx->getObject('ffConfiguration', $properties['id'])){
+        if ($config = $this->modx->getObject('ffConfiguration', $properties['id'])) {
             $configData = $config->toArray();
             $configData['filters'] = json_decode($configData['filters'], 1);
             $configData['default_filters'] = json_decode($configData['default_filters'], 1);
-            if($configData['offset'] > 0 && $configData['total'] > 0 && $configData['offset'] === $configData['total']){
+            if ($configData['offset'] > 0 && $configData['total'] > 0 && $configData['offset'] === $configData['total']) {
                 $configData['offset'] = 0;
 
                 $className = "ffIndex{$configData['id']}";
@@ -36,7 +36,10 @@ class FlatFiltersConfigurationIndexingProcessor extends modProcessor
                 $sql = "DELETE FROM {$tableName} WHERE config_id = {$configData['id']}";
                 $this->modx->exec($sql);
             }
-            $Indexing = new Indexing($this->modx, $configData);
+
+            if(!$Indexing = $this->ff->loadClass($configData, 'indexing')){
+                return $this->failure("Ошибка получения класса индексации.");
+            }
             $result = $Indexing->indexConfig();
             $offset = $result['offset'];
             $total = $result['total'];
@@ -54,4 +57,5 @@ class FlatFiltersConfigurationIndexingProcessor extends modProcessor
         ]);
     }
 }
+
 return 'FlatFiltersConfigurationIndexingProcessor';

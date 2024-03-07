@@ -10,7 +10,8 @@ class FlatFiltersConfigurationRemoveProcessor extends modObjectRemoveProcessor
      * {@inheritDoc}
      * @return boolean
      */
-    public function initialize() {
+    public function initialize()
+    {
         $corePath = MODX_CORE_PATH . 'components/flatfilters/';
 
         $this->config = array(
@@ -33,26 +34,31 @@ class FlatFiltersConfigurationRemoveProcessor extends modObjectRemoveProcessor
      * Can contain post-removal logic.
      * @return bool
      */
-    public function beforeRemove() {
+    public function beforeRemove()
+    {
         $this->dropTable();
         $this->removeConfigResources();
-        $this->modxBuilder->writeSchema(true,true,false);
+        $this->modxBuilder->writeSchema(true, true, false);
         $this->modxBuilder->parseSchema();
         return !$this->hasErrors();
     }
 
-    private function dropTable(){
+    private function dropTable()
+    {
         $tableName = $this->modx->getTableName("ffIndex{$this->object->get('id')}");
         $sql = "DROP TABLE {$tableName}";
-        $this->modx->exec($sql);    }
+        $this->modx->exec($sql);
+    }
 
-    private function removeConfigResources(){
+    private function removeConfigResources()
+    {
         $tableName = $this->modx->getTableName("ffConfigResource");
         $sql = "DELETE FROM {$tableName} WHERE `config_id` = {$this->object->get('id')}";
         $this->modx->exec($sql);
     }
 
-    public function cleanup() {
+    public function cleanup()
+    {
         return $this->success($this->modx->lexicon('ff_msg_success_remove'), $this->object);
     }
 }

@@ -1,6 +1,6 @@
 export default class Notify {
     constructor(config) {
-        if(window.SendIt && window.SendIt.Notify) return window.SendIt.Notify;
+        if (window.SendIt && window.SendIt.Notify) return window.SendIt.Notify;
         const defaults = {
             jsPath: 'assets/components/sendit/web/js/lib/izitoast/iziToast.min.js',
             cssPath: 'assets/components/sendit/web/css/lib/izitoast/iziToast.min.css',
@@ -20,11 +20,12 @@ export default class Notify {
         }
 
         this.config = Object.assign(defaults, config);
-        this.loadScript(this.config.jsPath, () => {}, this.config.cssPath);
+        this.loadScript(this.config.jsPath, () => {
+        }, this.config.cssPath);
     }
 
     loadScript(path, callback, cssPath) {
-        if (document.querySelector('script[src="' + path + '"]')){
+        if (document.querySelector('script[src="' + path + '"]')) {
             callback(path, "ok");
             return;
         }
@@ -76,9 +77,9 @@ export default class Notify {
                 options = Object.assign(this.config.handlerOptions, {title: message}, options);
                 try {
                     const toast = document.querySelector(this.config.typeSelectors[type]);
-                    if(toast && options.upd){
+                    if (toast && options.upd) {
                         this.updateText(this.config.titleSelector, message);
-                    }else{
+                    } else {
                         window[this.config.handlerClassName][type](options);
                     }
                 } catch (e) {
@@ -107,30 +108,31 @@ export default class Notify {
     close() {
         this.loadScript(this.config.jsPath, () => {
             const toast = document.querySelector(this.config.toastSelector);
-            if(!toast) return;
+            if (!toast) return;
             window[this.config.handlerClassName].hide({}, toast);
         }, this.config.cssPath)
     }
-    closeAll(){
+
+    closeAll() {
         this.loadScript(this.config.jsPath, () => {
             window[this.config.handlerClassName].destroy();
         }, this.config.cssPath)
     }
 
-    updateText(selector, text){
+    updateText(selector, text) {
         const toastMsg = document.querySelector(selector);
-        if(toastMsg){
+        if (toastMsg) {
             toastMsg.textContent = text;
         }
     }
 
-    setOptions(options){
+    setOptions(options) {
         window[this.config.handlerClassName].settings(options);
     }
 
-    progressControl(action, options = {}){
+    progressControl(action, options = {}) {
         const toast = document.querySelector(this.config.toastSelector);
-        if(!toast) return;
+        if (!toast) return;
         window[this.config.handlerClassName].progress(options, toast)[action]();
     }
 }

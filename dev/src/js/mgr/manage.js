@@ -8,13 +8,16 @@ export default class manage {
             wrapperSelector: '[data-js-wrapper="${name}"]',
             targetSelector: '[data-js-target]',
             eventSelector: '[data-js-event]',
+            valueSelector: '[data-js-value]',
             selectedSelector: '[data-js-selected="${name}"]',
             suggestionWrapSelector: '[data-js-suggestions="${name}"]',
+            selectedKey: 'jsSelected',
             methodKey: 'jsMethod',
             wrapperKey: 'jsWrapper',
             actionKey: 'jsAction',
             fieldsKey: 'jsFields',
             sortKey: 'jsSort',
+            classKey: 'jsClass',
             dirKey: 'jsDir',
             valueKey: 'jsValue',
             captionKey: 'jsCaption',
@@ -60,6 +63,10 @@ export default class manage {
                 const actionElements = document.querySelectorAll(this.config.methodSelector);
                 actionElements && actionElements.forEach(el => this.getSuggestionsWrap(el))
             }
+            if(e.target.closest(this.config.valueSelector)){
+                const wrap = e.target.closest(selector);
+                wrap && this.removeSelected(e, wrap.dataset[this.config.selectedKey], e.target.dataset[this.config.valueKey])
+            }
         })
     }
 
@@ -76,11 +83,11 @@ export default class manage {
         const params = new FormData(target);
         const storageValue = this.getValueFromStorage();
         for(let k in storageValue){
+            let value = storageValue[k];
             if(typeof storageValue[k] === 'object'){
-                params.append(k, JSON.stringify(storageValue[k]));
-            }else{
-                params.append(k, storageValue[k]);
+                value = JSON.stringify(storageValue[k]);
             }
+            params.has(k) ? params.set(k, value) : params.append(k, value)
         }
         functions.sendAjax(params, (response, args) => this.responseHandler(response, args), this.config.connector_url, this.config.headers, {target});
     }
@@ -154,6 +161,7 @@ export default class manage {
             params.append('action', el.dataset[this.config.actionKey]);
             params.append('fields', el.dataset[this.config.fieldsKey]);
             params.append('sort', el.dataset[this.config.sortKey]);
+            params.append('class', el.dataset[this.config.classKey]);
             params.append('value', el.value);
             functions.sendAjax(params, (response, args) => this.manageSuggestions(response.results, args), this.config.connector_url, this.config.headers, {el});
         }else{
@@ -256,9 +264,7 @@ export default class manage {
 
         if (selectedWrap) {
             input.value = '';
-            const span = this.createElement('span', e.target.dataset[this.config.valueKey], e.target.innerText, {
-                click: e => this.removeSelected(e, input.id, e.target.dataset[this.config.valueKey])
-            })
+            const span = this.createElement('span', e.target.dataset[this.config.valueKey], e.target.innerText, {})
             selectedWrap.appendChild(span);
         } else {
             input.dataset[this.config.valueKey] = e.target.dataset[this.config.valueKey];

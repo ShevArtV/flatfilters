@@ -1,7 +1,9 @@
+{set $type = $type?:$.get['type']}
 <div class="container-fluid">
     <form action="" data-js-method="sendForm" data-js-event="submit">
         <input type="hidden" name="action" value="{$.get['id'] ? 'mgr/configuration/update' : 'mgr/configuration/create'}">
         <input type="hidden" name="id" value="{$.get['id']}">
+        <input type="hidden" name="type" value="{$type}">
         <h1 class="my-4">{$.get['id'] ? $title : ('mgr_ff_new_title' | lexicon)}</h1>
         <div class="d-flex justify-content-between">
             <a class="btn btn-primary mb-3" href="{$back_url}">
@@ -26,6 +28,8 @@
                 </div>
                 <!-- /Название и шаг -->
             </div>
+
+            {if $type in list $show_parents_for}
             <div class="grid-col">
                 <!-- Родители -->
                 <div class="bg-light shadow px-3 py-4">
@@ -42,6 +46,7 @@
                                    data-js-event="input"
                                    data-js-caption="pagetitle"
                                    data-js-sort="pagetitle"
+                                   data-js-class="modResource"
                                    data-js-fields="pagetitle,id,menutitle,longtitle"
                                    data-js-action="mgr/api/getsuggestions">
                             <ul class="suggestions_list d-none" data-js-suggestions="parents"></ul>
@@ -63,6 +68,48 @@
                 </div>
                 <!-- /Родители -->
             </div>
+            {/if}
+
+            {if $type in list $show_groups_for}
+            <div class="grid-col">
+                <!-- Группы -->
+                <div class="bg-light shadow px-3 py-4">
+                    <div class="d-flex">
+                        <div class="col-8">
+                            <h5 class="">Группы</h5>
+                            <p>пользователи из этих групп будут проиндексированы</p>
+                        </div>
+                    </div>
+                    <div class="row justify-content-between">
+                        <div class="col-9 position-relative">
+                            <input type="text" name="groups" class="form-control mb-1" placeholder="введите название группы" autocomplete="off" id="groups"
+                                   data-js-method="getSuggestions"
+                                   data-js-event="input"
+                                   data-js-caption="name"
+                                   data-js-sort="id"
+                                   data-js-class="modUserGroup"
+                                   data-js-fields="name,id"
+                                   data-js-action="mgr/api/getsuggestions">
+                            <ul class="suggestions_list d-none" data-js-suggestions="groups"></ul>
+                            <div data-js-selected="groups">
+                                {if $groups}
+                                    {set $groups = $groups | split: ','}
+                                    {foreach $groups as $group}
+                                        <span data-js-value="{$group}">{$group | ffGetGroupName}</span>
+                                    {/foreach}
+                                {/if}
+                            </div>
+                        </div>
+                        <div class="col-3 text-end">
+                            <button type="button" class="btn btn-danger" data-js-method="clearAll" data-js-event="click" data-js-target="groups">
+                                {'mgr_ff_btn_clear_all' | lexicon}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Группы -->
+            </div>
+            {/if}
 
             <div class="grid-col grid-col_fw">
                 <!-- Фильтры  -->

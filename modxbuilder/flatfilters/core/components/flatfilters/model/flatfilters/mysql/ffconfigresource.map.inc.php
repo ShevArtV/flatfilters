@@ -1,5 +1,5 @@
 <?php
-$xpdo_meta_map['ffConfigResources']= array (
+$xpdo_meta_map['ffConfigResource']= array (
   'package' => 'flatfilters',
   'version' => '1.1',
   'table' => 'ff_config_resources',
@@ -31,9 +31,9 @@ $xpdo_meta_map['ffConfigResources']= array (
   ),
   'indexes' => 
   array (
-    'pair' => 
+    'item' => 
     array (
-      'alias' => 'pair',
+      'alias' => 'item',
       'primary' => false,
       'unique' => true,
       'type' => 'BTREE',

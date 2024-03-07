@@ -1,6 +1,6 @@
 <div class="container-fluid">
     <h1 class="my-4">Список конфигураций</h1>
-    <a class="btn btn-primary mb-3" href="{$_modx->config.site_url}{$_modx->config.manager_url | replace:'/': ''}/?a=configuration/manage&namespace=flatfilters">ДОБАВИТЬ КОНФИГУРАЦИЮ <i class="icon icon-plus"></i></a>
+    <a data-bs-target="#addConfiguration" data-bs-toggle="modal" class="btn btn-primary mb-3">ДОБАВИТЬ КОНФИГУРАЦИЮ <i class="icon icon-plus"></i></a>
 
     <div class="d-flex text-center">
         <div class="col-lg-1 p-3 border-end border-white bg-secondary text-white flex-grow-1">
@@ -78,6 +78,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
                 <button type="submit" class="btn btn-primary">Да</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" tabindex="-1" id="addConfiguration">
+    <div class="modal-dialog">
+        <form class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Что будем фильтровать?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {foreach $types as $k => $v}
+                <a class="btn btn-success mb-2" href="{$_modx->config.site_url}{$_modx->config.manager_url | replace:'/': ''}/?a=configuration/manage&namespace=flatfilters&type={$k}">
+                    {('mgr_ff_type_'~$k) | lexicon}
+                </a>
+                {/foreach}
             </div>
         </form>
     </div>

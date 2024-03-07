@@ -16,8 +16,8 @@ $_lang['ff_frontend_modifications_value'] = 'Модификация';
 $_lang['ff_frontend_modifications_remains'] = 'Остаток';
 $_lang['ff_frontend_pagetitle'] = 'Заголовок';
 
-$_lang['setting_ff_preset_name'] = 'Имя пресета фильтрации';
-$_lang['setting_ff_preset_name_desc'] = 'по умолчанию flatfilters';
+$_lang['setting_ff_preset_names'] = 'Имя  используемых пресетов';
+$_lang['setting_ff_preset_names_desc'] = 'по умолчанию {"filtering":"flatfilters", "pagination":"ff_pagination", "disabling":"ff_disabling"}';
 $_lang['setting_ff_connector'] = 'Имя сниппета-коннектора';
 $_lang['setting_ff_connector_desc'] = 'по умолчанию ffConnector';
 $_lang['setting_ff_allowed_tpls'] = 'Разрешённые для индексации шаблоны';
@@ -26,6 +26,14 @@ $_lang['setting_ff_js_path'] = 'Путь JavaScript фронтенда';
 $_lang['setting_ff_js_path_desc'] = 'по умолчанию assets/components/flatfilters/js/web/flatfilters.js';
 $_lang['setting_ff_js_config_path'] = 'Путь JavaScript конфигурации';
 $_lang['setting_ff_js_config_path_desc'] = 'по умолчанию ./flatfilters.inc.js';
+$_lang['setting_ff_tpls'] = 'Шаблоны, в которых выводятся фильтры';
+$_lang['setting_ff_tpls_desc'] = '';
+$_lang['setting_ff_show_parents_panel_for'] = 'Показывать панель выбора родителя для';
+$_lang['setting_ff_show_parents_panel_for_desc'] = 'указывает для каких типов конфигураций показывать панель выбора родительских ресурсов.';
+$_lang['setting_ff_show_groups_panel_for'] = 'Показывать панель выбора груупы для';
+$_lang['setting_ff_show_groups_panel_for_desc'] = 'указывает для каких типов конфигураций показывать панель выбора группы пользователей.';
+$_lang['setting_ff_path_to_types'] = 'Путь к файлу с перечислением доступных типов конфигураций';
+$_lang['setting_ff_path_to_types_desc'] = 'указывается относительно папки core/';
 
 $_lang['menu_ff_main_item'] = 'Управление конфигурациями';
 $_lang['ff_title_manage'] = 'Управление конфигурацией';
@@ -42,6 +50,9 @@ $_lang['mgr_ff_btn_find'] = 'Найти <i class="icon icon-search"></i>';
 $_lang['mgr_ff_btn_select_all'] = 'Выбрать всё';
 $_lang['mgr_ff_btn_close'] = 'Закрыть';
 $_lang['mgr_ff_default_value_desc'] = 'Если нужно задать параметры выборки заранее, используйте поля снизу. При этом фильтры, для которых задано значение по умолчанию, не будут показаны пользователю на фронте.';
+$_lang['mgr_ff_type_resources'] = 'Ресурсы';
+$_lang['mgr_ff_type_products'] = 'Товары';
+$_lang['mgr_ff_type_customers'] = 'Пользователей';
 
 $_lang['ff_type_varchar'] = 'Строка';
 $_lang['ff_type_int'] = 'Число';

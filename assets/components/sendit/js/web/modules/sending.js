@@ -35,9 +35,13 @@ export default class Sending {
         document.addEventListener('submit', (e) => {
             if (e.isTrusted) SendIt?.setComponentCookie('sitrusted', '1');
             const root = e.target.closest(this.config.rootSelector);
+            const field = e.target.closest(this.config.eventSelector.replace('="${eventName}"', ''));
 
             if (root) {
                 e.preventDefault();
+                if(field && field.dataset[this.config.eventKey] !== e.type){
+                    return false;
+                }
                 this.prepareSendParams(root, root.dataset[this.config.presetKey]);
             }
         });
@@ -48,6 +52,10 @@ export default class Sending {
             if (e.target.type === 'reset' && root) {
                 this.resetForm(root);
                 this.resetAllErrors(root);
+            }
+
+            if (e.target.closest(this.config.eventSelector.replace('${eventName}', e.type)) && root) {
+                this.sendField(e);
             }
         });
     }
@@ -62,29 +70,30 @@ export default class Sending {
             this.resetError(e.target.name, root);
         }
         if (field && field.tagName !== 'FORM') {
-            if (!field.value) return;
-            this.prepareSendParams(field, preset);
+            if(field.dataset[this.config.eventKey] === e.type){
+                field.tagName !== 'BUTTON' ? this.prepareSendParams(field, preset, e.type) : this.prepareSendParams(root, preset, e.type);
+            }
         } else {
             if (root && root.dataset[this.config.eventKey] === e.type) {
-                this.prepareSendParams(root, preset);
+                this.prepareSendParams(root, preset, e.type);
             }
         }
     }
 
-    prepareSendParams(root, preset = '', action = 'send') {
-        let event = 'submit';
+    prepareSendParams(root, preset = '', event = 'submit', action = 'send') {
         let formName = '';
         let params = new FormData();
         if (root !== document) {
-            event = root.dataset[this.config.eventKey] || 'submit';
-            params = root.tagName === 'FORM' ? new FormData(root) : params;
             formName = root.dataset[this.config.rootKey];
-            if (root.name && root.tagName !== 'FORM') {
-                const form = root.closest(this.config.rootSelector);
-                if (form) {
-                    params = new FormData(form);
-                } else {
-                    params.append(root.name, root.value);
+            if(root.tagName === 'FORM'){
+                params = new FormData(root);
+            }
+            else if(root.name){
+                params.append(root.name, root.value);
+            }else{
+                const fields = root.querySelectorAll('input, select, textarea, button');
+                if(fields.length){
+                    fields.forEach(field => field.name && params.append(field.name, field.value))
                 }
             }
         }
@@ -100,6 +109,7 @@ export default class Sending {
     }
 
     async send(target, url, headers, params, method = 'POST') {
+        url = url || this.config.actionUrl
         const fetchOptions = {
             method: method,
             body: params,
@@ -112,9 +122,7 @@ export default class Sending {
                 action: headers['X-SIACTION'],
                 target: target,
                 fetchOptions: fetchOptions,
-                params: params,
                 headers: headers,
-                method: method,
                 Sending: this
             }
         }))) {
@@ -125,7 +133,7 @@ export default class Sending {
 
         this.resetAllErrors(target);
 
-        const response = await fetch(this.config.actionUrl, fetchOptions);
+        const response = await fetch(url, fetchOptions);
 
         const result = await response.json();
 
@@ -194,7 +202,7 @@ export default class Sending {
         const redirectUrl = result.data.redirectUrl;
         const redirectTimeout = Number(result.data.redirectTimeout) || 0;
         const defaultGoals = result.data.goalName?.split(',') || [];
-        const layoutGoals = root.dataset[this.config.goalKey]?.split(',') || [];
+        const layoutGoals = (root.dataset && root.dataset[this.config.goalKey]) ? root.dataset[this.config.goalKey]?.split(',') : [];
         const goals = [...defaultGoals, ...layoutGoals];
 
         SendIt?.Notify?.success(result.message);
@@ -217,11 +225,7 @@ export default class Sending {
 
     error(result, root) {
         if (!result.data || !result.data.errors) {
-            if (SendIt?.getComponentCookie('sitrusted') === '0') {
-                SendIt?.Notify?.info(SendIt?.getComponentCookie('simsgantispam'));
-            } else {
-                SendIt?.Notify?.error(result.message);
-            }
+            SendIt?.Notify?.info(result.message);
         } else {
             for (let k in result.data.errors) {
                 const errorBlock = root.querySelector(this.config.errorBlockSelector.replace('${fieldName}', k));
@@ -256,7 +260,7 @@ export default class Sending {
 
         if (target.tagName === 'FORM') {
             target.reset();
-        } else {
+        } else if(target.value){
             target.value = '';
         }
     }

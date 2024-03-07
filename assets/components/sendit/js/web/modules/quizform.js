@@ -1,11 +1,12 @@
 export default class QuizForm {
 
     constructor(config) {
-        if(window.SendIt && window.SendIt.QuizForm) return window.SendIt.QuizForm;
+        if (window.SendIt && window.SendIt.QuizForm) return window.SendIt.QuizForm;
         const defaults = {
             pathToScripts: './modules/quizform.js',
             rootSelector: '[data-si-form]',
             rootKey: 'siForm',
+            nosaveAttr: 'data-si-nosave',
             autoKey: 'qfAuto',
             itemSelector: '[data-qf-item]',
             itemKey: 'qfItem',
@@ -48,7 +49,7 @@ export default class QuizForm {
                 const root = roots[i];
                 const items = root.querySelectorAll(this.config.itemSelector);
                 if (items.length < 2) continue;
-                const currentIndex = SendIt?.getComponentCookie(root.dataset[this.config.rootKey] + 'Current');
+                const currentIndex = root.hasAttribute(this.config.nosaveAttr) ? 1 : SendIt?.getComponentCookie(root.dataset[this.config.rootKey] + 'Current');
 
                 this.reset(root);
 
@@ -74,7 +75,7 @@ export default class QuizForm {
                     case 'next':
                         if (root) {
                             const nextIndex = this.getNextIndex(current, items);
-                            root ? this.change(root, nextIndex) : '';
+                            root ? this.change(root, nextIndex, true) : '';
                         }
                         break;
                     case 'prev':
@@ -89,7 +90,7 @@ export default class QuizForm {
                                 SendIt?.removeComponentCookie(root.dataset[this.config.rootKey] + 'Prev');
                             }
 
-                            root ? this.change(root, nextIndex) : '';
+                            root ? this.change(root, nextIndex, true) : '';
                         }
                         break;
                 }
@@ -105,16 +106,16 @@ export default class QuizForm {
                     if (items.length < 2) return;
                     const nextIndex = this.getNextIndex(current, items);
                     this.prepareProgress(root, current);
-                    if(current.dataset[this.config.autoKey]){
-                        this.change(root, nextIndex);
+                    if (current.dataset[this.config.autoKey]) {
+                        this.change(root, nextIndex, true);
                     }
                 }
             });
 
-
             document.addEventListener(this.config.sendEvent, (e) => {
-                if(e.detail.target === document) return true;
+                if (e.detail.target === document) return true;
                 const root = e.detail.target.closest(this.config.rootSelector);
+                if (!root) return true;
                 const {items} = this.getElements(root);
                 if (items.length < 2) return;
                 if (e.detail.result.success) {
@@ -210,8 +211,8 @@ export default class QuizForm {
         }
     }
 
-    change(root, nextIndex) {
-        const {items, current, currentQuestion, totalQuestions} = this.getElements(root);
+    change(root, nextIndex, isTrusted = false) {
+        const {items, current, currentQuestion, totalQuestions, btnReset, btnSend, btnNext, btnPrev} = this.getElements(root);
         const prevIndex = current.dataset[this.config.itemKey];
         const nextItem = root.querySelector(`[data-qf-item="${nextIndex}"]`);
         const dir = (nextItem && items.indexOf(nextItem) > items.indexOf(current)) ? 'next' : 'prev';
@@ -220,6 +221,11 @@ export default class QuizForm {
             bubbles: true,
             cancelable: true,
             detail: {
+                isTrusted: isTrusted,
+                btnReset: btnReset,
+                btnSend: btnSend,
+                btnNext: btnNext,
+                btnPrev: btnPrev,
                 root: root,
                 nextIndex: nextIndex,
                 items: items,
@@ -241,7 +247,7 @@ export default class QuizForm {
 
         this.setPagination(currentQuestion, totalQuestions, items, nextIndex);
 
-        if(nextItem === items[items.length-1]){
+        if (nextItem === items[items.length - 1]) {
             this.prepareProgress(root, nextItem);
         }
     }
@@ -284,7 +290,7 @@ export default class QuizForm {
     }
 
     setPagination(currentQuestion, totalQuestions, items, index) {
-        if(!currentQuestion) return;
+        if (!currentQuestion) return;
         const total = items.length;
         const nextItem = items.filter(el => Number(el.dataset[this.config.itemKey]) === Number(index));
         if (!nextItem[0]) {
@@ -329,15 +335,15 @@ export default class QuizForm {
 
     setProgress(root) {
         const {items, progress, progressValue} = this.getElements(root);
-        if(!progress) return;
+        if (!progress) return;
         const itemsComplete = Array.from(root.querySelectorAll(this.config.itemCompleteSelector));
         let total = items.length
         let complete = itemsComplete.length;
 
-        if(!items[items.length-1].classList.contains(this.config.visabilityClass)){
+        if (!items[items.length - 1].classList.contains(this.config.visabilityClass)) {
             const prev = SendIt?.getComponentCookie(root.dataset[this.config.rootKey] + 'Prev')?.split(',');
-            if(prev && prev.length){
-                if(prev.length + 1 === itemsComplete.length){
+            if (prev && prev.length) {
+                if (prev.length + 1 === itemsComplete.length) {
                     total = complete
                 }
             }
@@ -382,13 +388,13 @@ export default class QuizForm {
             }
         });
 
-        pages.classList.add(this.config.visabilityClass);
+        pages?.classList.add(this.config.visabilityClass);
         SendIt?.removeComponentCookie(root.dataset[this.config.rootKey] + 'Current');
         SendIt?.removeComponentCookie(root.dataset[this.config.rootKey] + 'Prev');
-        if(finishItem){
+        if (finishItem) {
             this.resetProgress(progress, 1);
             finishItem.classList.remove(this.config.visabilityClass);
-        }else{
+        } else {
             this.reset(root);
         }
     }

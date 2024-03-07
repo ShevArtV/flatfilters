@@ -13,6 +13,8 @@ $xpdo_meta_map['ffConfiguration']= array (
     'default_filters' => NULL,
     'offset' => 0,
     'total' => NULL,
+    'type' => 'resources',
+    'groups' => NULL,
   ),
   'fieldMeta' => 
   array (
@@ -67,6 +69,21 @@ $xpdo_meta_map['ffConfiguration']= array (
       'precision' => '10',
       'attributes' => 'unsigned',
       'phptype' => 'integer',
+      'null' => true,
+    ),
+    'type' => 
+    array (
+      'dbtype' => 'varchar',
+      'precision' => '50',
+      'phptype' => 'string',
+      'null' => false,
+      'default' => 'resources',
+    ),
+    'groups' => 
+    array (
+      'dbtype' => 'varchar',
+      'precision' => '100',
+      'phptype' => 'string',
       'null' => true,
     ),
   ),

@@ -2,6 +2,7 @@ export default class PaginationHandler {
     constructor(config) {
         if (window.FlatFilters && window.FlatFilters.PaginationHandler) return window.FlatFilters.PaginationHandler;
         const defaults = {
+            sendEvent: 'si:send:finish',
             paginationWrapSelector: '[data-pn-pagination]',
             firstPageBtnSelector: '[data-pn-first]',
             lastPageBtnSelector: '[data-pn-last]',
@@ -13,6 +14,8 @@ export default class PaginationHandler {
         }
 
         this.config = Object.assign(defaults, config);
+        const presets = SendIt.getComponentCookie('presets', 'FlatFilters');
+        this.preset = presets.pagination;
         this.initialize();
     }
 
@@ -46,6 +49,27 @@ export default class PaginationHandler {
                 this.goto(Number(this.pageInput.value) - 1);
             }
         });
+
+        document.addEventListener(this.config.sendEvent, (e) => {
+            this.responseHandler(e.detail.result);
+        })
+    }
+
+    responseHandler(result){
+        if(!result.data) return;
+        if (result.data.totalPages) {
+            const totalBlock = document.querySelector(this.config.totalPagesSelector);
+            const currentPageInput = this.pageInput;
+            const lastPage = this.gotoLastBtn;
+            totalBlock.textContent = lastPage.dataset[this.config.lastPageKey] = currentPageInput.max = result.data.totalPages;
+            this.wrapper.style.display = 'block';
+        } else {
+            result.data.getDisabled && (this.wrapper.style.display = 'none');
+        }
+        if(result.data.currentPage){
+            this.buttonsHandler(result.data.currentPage);
+            result.data.currentPage !== Number(this.pageInput.value) && this.goto(result.data.currentPage, true);
+        }
     }
 
     buttonsHandler(pageNum) {
@@ -88,9 +112,12 @@ export default class PaginationHandler {
         }
         this.pageInput.value = pageNum;
         FlatFilters.MainHandler.setSearchParams('text', 'page', pageNum > 1 ? pageNum : '');
-        if (!this.form || nosend) return;
-        const preset = this.form.dataset[SendIt.Sending.config.presetKey];
+
+        this.form && !nosend && this.sendResponse();
+    }
+
+    async sendResponse() {
         SendIt.setComponentCookie('sitrusted', '1');
-        SendIt.Sending.prepareSendParams(this.form, preset);
+        await SendIt.Sending.prepareSendParams(this.form, this.preset, 'change');
     }
 }

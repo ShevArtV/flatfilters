@@ -81,23 +81,25 @@ class FlatFiltersConfigurationUpdateProcessor extends modObjectUpdateProcessor
             $changeFields = implode(',' . PHP_EOL, $changeFields);
             $this->modx->exec($sql . $changeFields);
         }
+
         if ($addFields) {
-            $addSQL = $sql;
-            $addKeySQL = $sql;
-            foreach ($addFields as $key) {
-                $addSQL .= "ADD " . str_replace('#fieldName#', $key, $defaults[$filters[$key]['field_type']]);
-                $addKeySQL .= "ADD KEY `{$key}` (`{$key}`)";
+            $addSQL = [];
+            $addKeySQL = [];
+            foreach ($addFields as $i => $key) {
+                $addSQL[] = "ADD " . str_replace('#fieldName#', $key, $defaults[$filters[$key]['field_type']]);
+                $addKeySQL[] = " ADD KEY `{$key}` (`{$key}`)";
             }
-            $this->modx->exec($addSQL);
-            $this->modx->exec($addKeySQL);
+            $this->modx->exec($sql . implode(', ', $addSQL));
+            $this->modx->exec($sql . implode(', ', $addKeySQL));
         }
         if ($dropFields) {
-            $dropSQL = $sql;
+            $dropSQL = [];
             foreach ($dropFields as $key) {
-                $dropSQL .= "DROP COLUMN {$key}";
+                $dropSQL[] = "DROP COLUMN {$key}";
             }
-            $this->modx->exec($dropSQL);
+            $this->modx->exec($sql . implode(', ', $dropSQL));
         }
+
         if ($dropFields || $addFields || $changeFields || count($changeParents) || count($parents) !== count($oldParents)) {
             $this->modxBuilder->writeSchema(true, true, false);
             $this->modxBuilder->parseSchema();

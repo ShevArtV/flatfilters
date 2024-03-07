@@ -29,13 +29,14 @@
         }
 
         async importModule(pathToModule, property) {
+            const {default: moduleName} = await import(pathToModule);
+            if (property === "config") {
+                this[property] = moduleName();
+            } else {
+                this[property] = new moduleName(this.config[property])
+            }
             try {
-                const {default: moduleName} = await import(pathToModule);
-                if (property === "config") {
-                    this[property] = moduleName();
-                } else {
-                    this[property] = new moduleName(this.config[property])
-                }
+
             } catch (e) {
                 throw new Error(e);
             }

@@ -3,7 +3,7 @@
 class FlatFilters{
     constructor() {
         if(window.FlatFilters) return window.FlatFilters;
-        this.pathToConfigs = SendIt.getComponentCookie('ffJsConfigPath', 'FlatFilters');
+        this.pathToConfigs = SendIt.getComponentCookie('jsConfigPath', 'FlatFilters');
         this.events = {
             init: 'ff:init',
         }

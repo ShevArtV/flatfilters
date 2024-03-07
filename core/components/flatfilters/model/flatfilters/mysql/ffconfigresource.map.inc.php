@@ -31,9 +31,9 @@ $xpdo_meta_map['ffConfigResource']= array (
   ),
   'indexes' => 
   array (
-    'pair' => 
+    'item' => 
     array (
-      'alias' => 'pair',
+      'alias' => 'item',
       'primary' => false,
       'unique' => true,
       'type' => 'BTREE',

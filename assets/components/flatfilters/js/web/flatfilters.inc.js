@@ -4,7 +4,7 @@ export default function returnConfigs() {
             pathToScripts: './modules/rangeslider.js?v=55736345876787845',
             jsPath: 'assets/components/flatfilters/js/web/libs/nouislider/nouislider.min.js',
             cssPath: 'assets/components/flatfilters/css/web/libs/nouislider/nouislider.css',
-            formSelector: '[data-si-form]',
+            formSelector: '[data-ff-form]',
             rangeSelector: '[data-ff-range]',
             rangeKey: 'ffRange',
             startFieldSelector: '[data-ff-start="${key}"]',
@@ -21,7 +21,7 @@ export default function returnConfigs() {
             resultSelector: '[data-ff-results]'
         },
         PaginationHandler: {
-            pathToScripts: './modules/paginationhandler.js?v=565g7f6754',
+            pathToScripts: './modules/paginationhandler.js?v=56554',
             paginationWrapSelector: '[data-pn-pagination]',
             gotoBtnSelector: '[data-pn-goto]',
             gotoKey: 'pnGoto',

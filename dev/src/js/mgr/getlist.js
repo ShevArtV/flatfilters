@@ -134,7 +134,7 @@ export default class GetList {
             } else {
                 this.showErrors(response.data, form);
                 if (response.message) {
-                    functions.showNotify('error', response.message);
+                    functions.showNotify(response.message, 'error');
                 }
             }
         }, this.config.connector_url, this.config.headers);
