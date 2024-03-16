@@ -125,7 +125,7 @@ export default class MainHandler {
             }
         });
         this.resetSearchParams();
-        await this.sendResponse(this.presets.filtering);
+        await this.uptade();
         this.resetBtn && (this.resetBtn.classList.add(this.config.hideClass));
 
         document.dispatchEvent(new CustomEvent(this.events.reset, {
