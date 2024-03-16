@@ -9,50 +9,95 @@ export default class MainHandler {
             resultSelector: '[data-ff-results]',
             resetBtnSelector: '[data-ff-reset]',
             filtersSelector: '[data-ff-filter]',
+            selectedSelector: '[data-ff-selected]',
+            tplSelector: '[data-ff-tpl]',
+            itemSelector: '[data-ff-item="${key}-${value}"]',
             filterSelector: '[data-ff-filter="${key}"]',
             filterKey: 'ffFilter',
+            captionKey: 'ffCaption',
+            itemKey: 'ffItem',
+            hideClass: 'd-none'
         }
-
+        this.events = {
+            disabling: 'ff:values:disabled',
+            loaded: 'ff:results:loaded',
+            reset: 'ff:after:reset',
+            render: 'ff:before:render',
+            remove: 'ff:before:remove',
+        };
         this.config = Object.assign(defaults, config);
         this.form = document.querySelector(this.config.formSelector);
         this.resetBtn = document.querySelector(this.config.resetBtnSelector);
         this.presets = SendIt.getComponentCookie('presets', 'FlatFilters');
+        this.selected = document.querySelector(this.config.selectedSelector);
+        this.captions = {};
         this.initialize();
     }
 
     initialize() {
         document.addEventListener(this.config.beforeSendEvent, (e) => {
-            if (e.detail.target.closest(this.config.formSelector)) {
+            if (e.detail.target.closest(this.config.formSelector) && this.checkPreset(e.detail)) {
                 this.beforeSendHandler(e)
             }
         })
 
-        document.addEventListener('change', (e) => {
-            if (e.target.closest(this.config.filtersSelector)) {
-                this.changeHandler(e);
-                this.sendResponse(this.presets.filtering);
-            }
-        })
-
         document.addEventListener(this.config.sendEvent, (e) => {
-            this.responseHandler(e.detail.result);
-        })
-
-        document.addEventListener('click', (e) => {
-            if (e.target.closest(this.config.resetBtnSelector)) {
-                this.resetHandler(e)
+            if (this.checkPreset(e.detail)) {
+                this.responseHandler(e.detail.result);
             }
         })
 
-        if (window.location.search) {
-            this.sendResponse(this.presets.disabling);
-        } else {
-            this.resetBtn.style.display = 'none';
-        }
+        document.addEventListener('change', async (e) => {
+            if (e.target.closest(this.config.filtersSelector)) {
+                await this.filter(e.target.closest(this.config.filtersSelector))
+            }
+        })
+
+        document.addEventListener('submit', async (e) => {
+            if (e.target.closest(this.config.formSelector)) {
+                e.preventDefault();
+                await this.submit(e);
+            }
+        })
+
+        document.addEventListener('click', async (e) => {
+            const valueItemSelector = this.config.itemSelector.replace('="${key}-${value}"', '');
+            if (e.target.closest(this.config.resetBtnSelector)) {
+                e.preventDefault();
+                await this.reset()
+            }
+            if (e.target.closest(valueItemSelector)) {
+                this.clearFilter(e.target.closest(valueItemSelector))
+            }
+        })
+
+        document.addEventListener('ff:init', (e) => {
+            if (window.location.search) {
+                this.sendResponse(this.presets.disabling);
+                if (this.selected) {
+                    this.showSelectedValues();
+                }
+            } else {
+                this.resetBtn && (this.resetBtn.classList.add(this.config.hideClass));
+            }
+        })
     }
 
-    resetHandler(e) {
-        e.preventDefault();
+    async filter(target) {
+        this.changeValue(target);
+        await this.sendResponse(this.presets.filtering);
+    }
+
+    async update() {
+        const updElem = document.createElement('input');
+        updElem.type = 'hidden';
+        updElem.name = 'upd';
+        updElem.value = '1';
+        this.form.append(updElem);
+        await this.sendResponse(this.presets.filtering);
+    }
+
+    async reset() {
         const filters = document.querySelectorAll(this.config.filtersSelector);
         filters.forEach(filter => {
             const type = this.getElemType(filter);
@@ -74,58 +119,157 @@ export default class MainHandler {
                 case 'numrange':
                     FlatFilters.RangeSlider.reset(filter.dataset[this.config.filterKey]);
                     break;
+                default:
+                    filter.value = '';
+                    break;
             }
-            this.setSearchParams(type, filter.dataset[this.config.filterKey], '');
         });
+        this.resetSearchParams();
+        await this.sendResponse(this.presets.filtering);
+        this.resetBtn && (this.resetBtn.classList.add(this.config.hideClass));
 
-        this.resetBtn.style.display = 'none';
-        this.sendResponse(this.presets.filtering);
+        document.dispatchEvent(new CustomEvent(this.events.reset, {
+            bubbles: true,
+            cancelable: false,
+            detail: {filters}
+        }))
     }
 
-    beforeSendHandler(e) {
-        e.detail.fetchOptions.headers['X-SIFORM'] = e.detail.target.closest(this.config.formSelector).dataset[this.config.formKey];
+    async submit(e) {
+        const form = e.target.closest(this.config.formSelector);
+        const elements = Array.from(form.elements);
+        elements.forEach(elem => this.changeValue(elem));
+        await this.sendResponse(this.presets.filtering);
     }
 
-    changeHandler(e) {
-        //console.log(e.target)
-        const elem = e.target.closest(this.config.filtersSelector);
-        const key = elem.dataset[this.config.filterKey];
+    changeValue(elem) {
+        if (elem.type === 'hidden') return true;
+        const key = elem.dataset[this.config.filterKey] || elem.name;
         const type = this.getElemType(elem);
+        if (!key) return true;
         this.setSearchParams(type, key, elem.value);
     }
+
+    clearFilter(target) {
+        const keyValue = target.dataset[this.config.itemKey].split('-');
+        const filterSelector = this.config.filterSelector.replace('${key}', keyValue[0]);
+        let filter = this.form.querySelector(filterSelector);
+        const type = this.getElemType(filter);
+        switch (type) {
+            case 'checkbox':
+                filter = this.form.querySelector(`${filterSelector}[value="${keyValue[1]}"]`);
+                filter.checked = false;
+                break;
+            case 'multiple':
+                filter.options[filter.selectedIndex].selected = false;
+                break;
+            case 'numrange':
+                FlatFilters?.RangeSlider?.reset(keyValue[0]);
+                filter = false;
+                break;
+            default:
+                filter.value = '';
+                break;
+        }
+
+        const eventOptions = {target, filter, type};
+        if (!document.dispatchEvent(new CustomEvent(this.events.remove, {
+            bubbles: true,
+            cancelable: true,
+            detail: {eventOptions}
+        }))) {
+            return false;
+        }
+
+        target.remove();
+        filter && filter.dispatchEvent(new Event('change', {bubbles: true}))
+    }
+
+    renderValue(key, value, caption) {
+        const tpl = document.querySelector(this.config.tplSelector)?.cloneNode(true);
+        const item = document.querySelector(this.config.itemSelector.replace('${key}', key).replace('${value}', value));
+        if (!tpl || item) return;
+
+        const eventOptions = {key, value, caption};
+        if (!document.dispatchEvent(new CustomEvent(this.events.render, {
+            bubbles: true,
+            cancelable: true,
+            detail: {eventOptions}
+        }))) {
+            return false;
+        }
+
+        tpl.innerHTML = tpl.innerHTML.replaceAll('$key', eventOptions.key).replaceAll('$value', eventOptions.value).replaceAll('$caption', eventOptions.caption);
+        this.selected && this.selected.appendChild(tpl.content);
+    }
+
+    resetSelectedValues() {
+        const values = this.selected.querySelectorAll(this.config.itemSelector.replace('="${key}-${value}"', ''));
+        values.length && values.forEach(el => el.remove())
+        this.captions = [];
+    }
+
+    checkPreset(detail) {
+        const presets = Object.values(this.presets);
+        return presets.includes(detail.headers['X-SIPRESET'])
+    }
+
 
     async sendResponse(preset) {
         SendIt.setComponentCookie('sitrusted', '1');
         await SendIt.Sending.prepareSendParams(this.form, preset, 'change');
     }
 
+    beforeSendHandler(e) {
+        e.detail.fetchOptions.headers['X-SIFORM'] = e.detail.target.closest(this.config.formSelector).dataset[this.config.formKey];
+    }
+
     responseHandler(result) {
         //console.log(result);
-        if(!result.data) return;
+        if (!result.data) return;
         const resultsBlock = document.querySelector(this.config.resultSelector);
         const filters = document.querySelectorAll(this.config.filtersSelector);
+        const updElem = this.form.querySelector('input[name="upd"][type="hidden"]');
+        updElem && updElem.remove();
 
         if (result.data.resources && resultsBlock) {
             resultsBlock.innerHTML = result.data.resources;
+            document.dispatchEvent(new CustomEvent(this.events.loaded, {
+                bubbles: true,
+                cancelable: false,
+                detail: {
+                    resultsBlock: resultsBlock,
+                    data: result.data,
+                    FlatFilters: this
+                }
+            }))
         }
 
         if (!result.data.getDisabled) {
             this.setDisabled(filters, result.data);
+
+            window.location.search && this.resetBtn && this.resetBtn.classList.remove(this.config.hideClass);
+
+            if (this.selected) {
+                this.resetSelectedValues();
+                this.showSelectedValues();
+            }
         } else {
             this.sendResponse(this.presets.disabling);
         }
 
-        if (result.data.totalTime) {
-            document.querySelector('#time').textContent = result.data.totalTime;
-        }
-        if (result.data.totalResources) {
-            document.querySelector('#total').textContent = result.data.totalResources;
+        const timeBlock = document.querySelector('#time');
+        if (result.data.totalTime && timeBlock) {
+            timeBlock.textContent = result.data.totalTime;
         }
 
-        window.location.search && (this.resetBtn.style.display = 'block');
+        const totalCountBlock = document.querySelector('#total');
+        if (('totalResources' in result.data) && totalCountBlock) {
+            totalCountBlock.textContent = result.data.totalResources;
+        }
     }
 
-    setDisabled(filters, data){
+    setDisabled(filters, data) {
         filters.forEach(el => {
             const key = el.dataset[this.config.filterKey];
             if (data.filterValues && data.filterValues[key] && data.filterValues[key]['values']) {
@@ -146,8 +290,58 @@ export default class MainHandler {
                         }
                         break;
                 }
+
+                document.dispatchEvent(new CustomEvent(this.events.disabling, {
+                    bubbles: true,
+                    cancelable: false,
+                    detail: {
+                        type: type,
+                        element: el,
+                        key: key,
+                        data: data,
+                        filters: filters,
+                        FlatFilters: this
+                    }
+                }))
             }
         });
+    }
+
+    showSelectedValues() {
+        const urlParams = new URLSearchParams(window.location.search);
+        for (const param of urlParams) {
+            const selector = this.config.filterSelector.replace('${key}', param[0]);
+            const filter = this.form.querySelector(selector);
+            if(!filter) continue;
+            const type = this.getElemType(filter);
+            let values = []
+            switch (type) {
+                case 'checkbox':
+                    values = this.getCheckboxValue(param[0]);
+                    break;
+                case 'multiple':
+                    values = this.getMultipleValues(param[0]);
+                    break;
+                case 'numrange':
+                    values = this.getNumrangeValues(param[0]);
+                    break;
+                default:
+                    this.captions[param[0]] = [{value: filter.value, caption: filter.dataset[this.config.captionKey] || filter.value}]
+                    break;
+            }
+        }
+        if (this.captions) {
+            for (let key in this.captions) {
+                this.captions[key].forEach(data => {
+                    this.renderValue(key, data.value, data.caption);
+                })
+            }
+        }
+    }
+
+    resetSearchParams() {
+        const url = window.location.href;
+        window.history.replaceState({}, '', url.split('?')[0]);
     }
 
     setSearchParams(type, key, value = '') {
@@ -156,16 +350,14 @@ export default class MainHandler {
 
         switch (type) {
             case 'checkbox':
-                params = this.setCheckboxParam(key, params);
-                break;
             case 'multiple':
-                params = this.setMultipleParam(key, params);
+                params = this.addMultipleParam(key, type, params);
                 break;
             case 'numrange':
-                params = this.setNumrangeParam(key, params);
+                params = this.addNumrangeParam(key, params);
                 break;
             default:
-                params = this.setTextParam(key, value, params);
+                params = this.addTextParam(key, value, params);
                 break;
         }
 
@@ -177,7 +369,7 @@ export default class MainHandler {
         }
     }
 
-    setTextParam(key, value, params) {
+    addTextParam(key, value, params) {
         if (value) {
             params.set(key, value);
         } else {
@@ -186,38 +378,61 @@ export default class MainHandler {
         return params;
     }
 
-    setNumrangeParam(key, params) {
+    addNumrangeParam(key, params) {
         params.delete(key);
-        const {el, min, max, startField, endField, start, end} = FlatFilters.RangeSlider.getItems(key);
-        if (Number(startField.value) !== min || Number(endField.value) !== max) {
-            params.set(key, `${startField.value},${endField.value}`);
+        const values = this.getNumrangeValues(key);
+        if (values.start !== values.min || values.end !== values.max) {
+            params.set(key, `${values.start},${values.end}`);
         }
         return params;
     }
 
-    setMultipleParam(key, params) {
-        const elem = document.querySelector(this.config.filterSelector.replace('${key}', key));
+    getNumrangeValues(key) {
+        const {min, max, startField, endField} = FlatFilters.RangeSlider.getItems(key);
+        this.captions[key] = [
+            {value: startField.value + ',' + endField.value, caption: startField.value + ' - ' + endField.value},
+        ]
+        return {
+            start: Number(startField.value),
+            end: Number(endField.value),
+            min: min,
+            max: max
+        };
+    }
+
+    addMultipleParam(key, type, params) {
         params.delete(key);
-        const values = [];
-        Array.from(elem.options).forEach(el => {
-            if (el.selected && el.value) values.push(el.value);
-        });
+        const values = type === 'multiple' ? this.getMultipleValues(key) : this.getCheckboxValue(key);
         if (values.length) {
             params.set(key, values.join(','));
         }
         return params;
     }
 
-    setCheckboxParam(key, params) {
-        params.delete(key);
-        const checkboxes = document.querySelectorAll(this.config.filterSelector.replace('${key}', key) + ':checked');
-        if (checkboxes.length) {
-            const values = [];
-            checkboxes.forEach(el => values.push(el.value));
-            params.set(key, values.join(','));
-        }
+    getMultipleValues(key) {
+        const values = [];
+        this.captions[key] = [];
+        const elem = document.querySelector(this.config.filterSelector.replace('${key}', key));
+        Array.from(elem.options).forEach(el => {
+            if (el.selected && el.value) {
+                values.push(el.value);
+                this.captions[key].push({value: [el.value], caption: el.dataset[this.config.captionKey] || el.value});
+            }
+        });
+        return values;
+    }
 
-        return params;
+    getCheckboxValue(key) {
+        const checkboxes = document.querySelectorAll(this.config.filterSelector.replace('${key}', key) + ':checked');
+        const values = [];
+        this.captions[key] = [];
+        if (checkboxes.length) {
+            checkboxes.forEach(el => {
+                values.push(el.value);
+                this.captions[key].push({value: [el.value], caption: el.dataset[this.config.captionKey] || el.value});
+            });
+        }
+        return values;
     }
 
     getElemType(elem) {

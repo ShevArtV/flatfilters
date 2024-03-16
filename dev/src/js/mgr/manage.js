@@ -145,10 +145,12 @@ export default class manage {
 
     getLocalSuggestions(el) {
         if (el.value.length > 2) {
-            const filtered = this.config.filters_keys.filter(item =>
-                item.key.indexOf(el.value) !== -1 || item.caption.indexOf(el.value) !== -1
-            )
-            console.log()
+            const filtered = [];
+            for(let k in this.config.filters_keys){
+                if(k.indexOf(el.value) !== -1 || this.config.filters_keys[k]['caption'].indexOf(el.value) !== -1){
+                    filtered.push(this.config.filters_keys[k])
+                }
+            }
             this.manageSuggestions(filtered, {el})
         }else{
             this.manageSuggestions([], {el})

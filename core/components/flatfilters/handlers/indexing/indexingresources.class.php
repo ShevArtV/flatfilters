@@ -27,11 +27,10 @@ class IndexingResources implements IndexingInterface
         $offset = $this->config['offset'];
         $q = $this->getQuery();
         $total = $this->modx->getCount($this->classKey, $q);
-
         if ($offset >= $total) {
-            $this->modx->log(1, 'Индексирование завершено');
             return ['total' => $total, 'offset' => $offset];
         }
+
         $q->limit($this->config['step'], $offset);
         $resources = $this->modx->getIterator($this->classKey, $q);
 
@@ -61,8 +60,6 @@ class IndexingResources implements IndexingInterface
             'query' => $q,
         ]);
 
-        $q->prepare();
-        $this->modx->log(1, $q->toSQL());
         return $q;
     }
 
@@ -80,7 +77,7 @@ class IndexingResources implements IndexingInterface
     protected function getResourceData($resource)
     {
         $resourceData = $resource->toArray();
-        return array_merge($resourceData, $this->getResourceTVs($resourceData['id']), $this->getUserFields($resourceData['createdby']));
+        return array_merge($this->getUserFields($resourceData['createdby']), $resourceData, $this->getResourceTVs($resourceData['id']));
     }
 
     protected function getResourceTVs(int $rid): array
@@ -150,7 +147,6 @@ class IndexingResources implements IndexingInterface
         $q->select($this->modx->getSelectColumns('modUser', 'modUser', '', $userExludeFields, true));
         $q->select($this->modx->getSelectColumns('modUserProfile', 'Profile', '', ['id', 'sessionid'], true));
         $q->where(['modUser.id' => $user_id]);
-        $q->prepare();
 
         $tstart = microtime(true);
         if ($q->prepare() && $q->stmt->execute()) {
@@ -219,11 +215,12 @@ class IndexingResources implements IndexingInterface
             } else {
                 if ($key !== 'rid' && $filters[$key]['field_type'] === 'timestamp') {
                     $value = $value ?: '01-01-1971 00:00:00';
-                    $value = is_string($value) ? strtotime($value) : $value;
+                    $value = !is_numeric($value) ? strtotime($value) : $value;
                 }
                 if ($key !== 'rid' && in_array($filters[$key]['field_type'], ['int', 'decimal'])) {
                     $value = $value ?? 0;
                 }
+
                 $indexes[$key] = $value;
             }
         }
@@ -271,8 +268,8 @@ class IndexingResources implements IndexingInterface
     {
         foreach ($combination as $key => $val) {
             if ($key !== 'rid' && $filters[$key]['field_type'] === 'timestamp') {
-                $val = $val ?: '1970';
-                $combination[$key] = is_string($val) ? strtotime($val) : $val;
+                $val = $val ?: '01-01-1971 00:00:00';
+                $combination[$key] = !is_numeric($val) ? strtotime($val) : $val;
             }
             if (!is_array($val)) continue;
             foreach ($val as $k => $v) {

@@ -11,6 +11,8 @@ export default class PaginationHandler {
             nextPageBtnSelector: '[data-pn-next]',
             currentPageInputSelector: '[data-pn-current]',
             totalPagesSelector: '[data-pn-total]',
+            limitSelector: '[data-pn-limit]',
+            hideClass: 'd-none'
         }
 
         this.config = Object.assign(defaults, config);
@@ -33,6 +35,9 @@ export default class PaginationHandler {
         document.addEventListener('change', (e) => {
             if (e.target.closest(this.config.currentPageInputSelector)) {
                 this.goto(Number(this.pageInput.value));
+            }
+            if (e.target.closest(this.config.limitSelector)) {
+                this.goto(1);
             }
         })
         document.addEventListener('click', (e) => {
@@ -62,9 +67,9 @@ export default class PaginationHandler {
             const currentPageInput = this.pageInput;
             const lastPage = this.gotoLastBtn;
             totalBlock.textContent = lastPage.dataset[this.config.lastPageKey] = currentPageInput.max = result.data.totalPages;
-            this.wrapper.style.display = 'block';
+            this.wrapper.classList[result.data.totalPages > 1 ? 'remove' : 'add'](this.config.hideClass);
         } else {
-            result.data.getDisabled && (this.wrapper.style.display = 'none');
+            result.data.getDisabled && this.wrapper.classList.add(this.config.hideClass);
         }
         if(result.data.currentPage){
             this.buttonsHandler(result.data.currentPage);

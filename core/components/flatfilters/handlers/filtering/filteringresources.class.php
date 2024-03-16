@@ -9,9 +9,9 @@ class FilteringResources implements FilteringInterface
     protected $pdoTools;
     protected array $configData;
     protected array $properties;
-    protected array $filters;
+    public array $filters;
     protected array $defaultFilters;
-    protected array $values = [];
+    public array $values = [];
     protected array $tokens = [];
     protected string $tablePrefix;
     protected string $corePath;
@@ -38,6 +38,7 @@ class FilteringResources implements FilteringInterface
         $this->tablePrefix = $this->modx->getOption('table_prefix');
         $this->corePath = $this->modx->getOption('core_path');
         $this->tableName = $this->modx->getTableName('ffIndex' . $this->configData['id']);
+        $this->configData['scriptProperties']['parents'] = $this->configData['parents'] ?: 0;
         $this->properties = $this->configData['scriptProperties'];
         $this->filters = json_decode($this->configData['filters'], true) ?: [];
         $this->defaultFilters = json_decode($this->configData['default_filters'], true) ?: [];
@@ -48,7 +49,6 @@ class FilteringResources implements FilteringInterface
 
     protected function prepareFilters(): void
     {
-        $this->properties['sortby'] = [];
         if (!empty($_REQUEST['sortby'])) {
             $sortby = explode('|', $_REQUEST['sortby']);
             $this->properties['sortby'][$sortby[0]] = $sortby[1];
@@ -72,13 +72,26 @@ class FilteringResources implements FilteringInterface
         $time_start = microtime(true);
         $output = [];
 
+        $this->modx->invokeEvent('ffOnBeforeFilter', [
+            'configData' => $this->configData,
+            'FlatFilters' => $this
+        ]);
+
         $hash = md5(json_encode($this->values));
+        $upd = $this->properties['upd'];
+        unset($this->properties['upd']);
         $_SESSION['flatfilters'][$this->configData['id']]['properties'] = array_merge($_SESSION['flatfilters'][$this->configData['id']]['properties'] ?: [], $this->properties);
 
-
         $rids = $_SESSION['flatfilters'][$this->configData['id']]['rids'];
-        if (!$rids || $_SESSION['flatfilters'][$this->configData['id']]['hash'] !== $hash) {
+        if (!$rids || $_SESSION['flatfilters'][$this->configData['id']]['hash'] !== $hash || $upd) {
             $rids = $this->filter();
+
+            $this->modx->invokeEvent('ffOnAfterFilter', [
+                'configData' => $this->configData,
+                'rids' => $rids
+            ]);
+            $rids = $this->modx->event->returnedValues['rids'] ?? $rids;
+
             $_SESSION['flatfilters'][$this->configData['id']]['hash'] = $hash;
             $_SESSION['flatfilters'][$this->configData['id']]['rids'] = $rids;
             $output['getDisabled'] = 1;
@@ -87,7 +100,6 @@ class FilteringResources implements FilteringInterface
 
         if ($rids) {
             $rids = $this->getOutputIds($rids);
-
             if ($this->properties['element']) {
                 $output['resources'] = $this->runRender($rids);
             } else {
@@ -226,9 +238,10 @@ class FilteringResources implements FilteringInterface
         /* получаем список id для отображения на странице */
         if ($statement = $this->execute($sql)) {
             $rids = $statement->fetchAll(PDO::FETCH_COLUMN);
+            $rids = implode(',', $rids);
         }
 
-        return implode(',', $rids);
+        return $rids;
     }
 
     protected function getOutputSQL($rids)
@@ -240,7 +253,7 @@ class FilteringResources implements FilteringInterface
     protected function getSortby()
     {
         /* готовим условия сортировки результатов фильтрации */
-        $sortby = $tokens = [];
+        $sortby = [];
         $sortStr = " ORDER BY id";
         $sort = is_array($this->properties['sortby']) ? $this->properties['sortby'] : json_decode($this->properties['sortby'], 1);
         foreach ($sort as $key => $dir) {
@@ -256,12 +269,20 @@ class FilteringResources implements FilteringInterface
     protected function runRender($rids)
     {
         $props = array_merge($this->properties, [
-            'sortby' => '',
+            'sortby' => "",
             'offset' => 0,
             'limit' => $this->limit
         ]);
         unset($props['element'], $props['filters'], $props['offset'], $props['page'], $props['filtersKeys'], $props['configId']);
         $props[$this->resourcesProp] = $rids;
+
+        $this->modx->invokeEvent('ffOnBeforeRender', [
+            'configData' => $this->configData,
+            'props' => $props,
+            'FlatFilters' => $this
+        ]);
+        $props = is_array($this->modx->event->returnedValues['props']) ? $this->modx->event->returnedValues['props'] : $props;
+
         return $this->pdoTools->runSnippet($this->properties['element'], $props);
     }
 

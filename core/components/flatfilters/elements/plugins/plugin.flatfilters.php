@@ -14,8 +14,17 @@ switch ($modx->event->name) {
         $FF->removeResourceIndex($id);
         $resourceData = $resource->toArray();
         if ($resourceData['published'] && !$resourceData['deleted']) {
-            $FF->indexing($resourceData);
+            $FF->indexingDocument($resourceData);
         }
+        break;
+
+    case 'OnUserSave':
+        $FF->removeResourceIndex($user->get('id'));
+        $FF->indexingUser($user);
+        break;
+
+    case 'OnUserRemove':
+        $FF->removeResourceIndex($user->get('id'));
         break;
 
     case 'OnResourceDelete':

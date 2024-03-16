@@ -9,6 +9,7 @@ $scriptProperties = $_SESSION['flatfilters'][$configId]['properties'] ?: [];
 $FF = $modx->getService('flatfilters','FlatFilters', MODX_CORE_PATH . 'components/flatfilters/');
 $configData = $config->toArray();
 $scriptProperties['limit'] = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : $scriptProperties['limit'];
+$scriptProperties['upd'] = $_REQUEST['upd'];
 $configData['scriptProperties'] = $scriptProperties;
 if(!$Filtering = $FF->loadClass($configData, 'filtering')){
     return false;

@@ -128,7 +128,6 @@ export default class GetList {
 
     sendForm(params, form){
         functions.sendAjax(params, (response) => {
-            console.log(response);
             if (response.success) {
                 this.responseSuccess(response, form);
             } else {

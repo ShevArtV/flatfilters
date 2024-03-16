@@ -25,7 +25,7 @@ class FlatFilters
         $this->tpls = $this->modx->getOption('ff_allowed_tpls', '', false);
         $this->tablePrefix = $this->modx->getOption('table_prefix');
         $presets = $this->modx->getOption('ff_preset_names', '', '{"filtering":"flatfilters", "pagination":"ff_pagination", "disabling":"ff_disabling"}');
-        $this->presets = json_decode($presets,1);
+        $this->presets = json_decode($presets, 1);
         $this->types = [];
 
         $this->modx->addPackage('migx', $this->core_path . 'components/migx/model/');
@@ -49,44 +49,44 @@ class FlatFilters
     private function getTypes(): bool
     {
         $pathToTypes = $this->core_path . $this->modx->getOption('ff_path_to_types', '', 'components/flatfilters/types.inc.php');
-        if(file_exists($pathToTypes)){
+        if (file_exists($pathToTypes)) {
             $this->types = include($pathToTypes);
-            if(!$this->ms2) unset($this->types['products']);
+            if (!$this->ms2) unset($this->types['products']);
             return true;
         }
-        $this->modx->log(1,"[FlatFilters::getTypes] Файл {$pathToTypes} не найден");
+        $this->modx->log(1, "[FlatFilters::getTypes] Файл {$pathToTypes} не найден");
         return false;
     }
 
     public function getFieldsKeys(string $type = 'resources'): array
     {
-        switch($type){
+        switch ($type) {
             case 'resources':
                 $fields = array_merge(
+                    $this->getUserKeys(),
                     $this->getTableKeys('site_content'),
                     $this->getTVsKeys(),
-                    $this->getUserKeys()
                 );
                 break;
             case 'products':
                 $fields = array_merge(
+                    $this->getUserKeys(),
                     $this->getTableKeys('site_content'),
-                    $this->getTVsKeys(),
                     $this->getTableKeys('ms2_products'),
                     $this->getOptionsKeys(),
-                    $this->getUserKeys()
+                    $this->getTVsKeys(),
                 );
                 break;
             case 'customers':
                 $fields = $this->getUserKeys();
                 break;
-           default:
-               $this->modx->invokeEvent('ffOnGetFieldKeys', [
-                   'type' => $type,
-                   'FlatFilters' => $this,
-               ]);
+            default:
+                $this->modx->invokeEvent('ffOnGetFieldKeys', [
+                    'type' => $type,
+                    'FlatFilters' => $this,
+                ]);
 
-               $fields = is_array($this->modx->event->returnedValues) ? $this->modx->event->returnedValues : [];
+                $fields = is_array($this->modx->event->returnedValues) ? $this->modx->event->returnedValues : [];
                 break;
         }
 
@@ -116,7 +116,7 @@ class FlatFilters
             $items = $statement->fetchAll(PDO::FETCH_ASSOC);
             foreach ($items as $item) {
                 if (in_array($item['Field'], $excludeFields)) continue;
-                $output[] = [
+                $output[$item['Field']] = [
                     'key' => $item['Field'],
                     'caption' => $this->modx->lexicon("ff_frontend_{$item['Field']}"),
                 ];
@@ -138,13 +138,13 @@ class FlatFilters
     {
         $profiles = $this->modx->getIterator('modUserProfile');
         $extendFields = $output = [];
-        foreach($profiles as $profile){
+        foreach ($profiles as $profile) {
             $extended = $profile->get('extended');
             $extendFields = array_merge($extendFields, array_keys($extended));
         }
         $extendFields = array_unique($extendFields);
         foreach ($extendFields as $key) {
-            $output[] = [
+            $output[$key] = [
                 'key' => $key,
                 'caption' => $this->modx->lexicon("ff_frontend_{$key}"),
             ];
@@ -160,7 +160,7 @@ class FlatFilters
         if ($statement = $this->modx->query($sql)) {
             $items = $statement->fetchAll(PDO::FETCH_COLUMN);
             foreach ($items as $item) {
-                $output[] = [
+                $output[$item] = [
                     'key' => $item,
                     'caption' => $this->modx->lexicon("ff_frontend_{$item}"),
                 ];
@@ -174,7 +174,7 @@ class FlatFilters
     {
         $output = [];
         $q = $this->modx->newQuery('modTemplateVar');
-        if($this->tpls){
+        if ($this->tpls) {
             $q->where("id IN (SELECT tmplvarid FROM modx_site_tmplvar_templates WHERE templateid IN ({$this->tpls}))");
         }
         $q->prepare();
@@ -182,20 +182,22 @@ class FlatFilters
         foreach ($tvs as $tv) {
             $tv = $tv->toArray();
             if ($tv['type'] !== 'migx') {
-                $output[] = [
+                $output[$tv['name']] = [
                     'key' => $tv['name'],
                     'caption' => $this->modx->lexicon("ff_frontend_{$tv['name']}"),
                 ];
             } else {
                 if ($tv['input_properties']['configs']) {
-                    if($config = $this->modx->getObject('migxConfig', ['name' => 'modifications'])){
-                        $formtabs = json_decode($config->get('formtabs'), 1);
+                    if ($config = $this->modx->getObject('migxConfig', ['name' => $tv['input_properties']['configs']])) {
+
+                        $formtabs = json_decode($config->get('formtabs'), true);
                     }
                 } else {
-                    $formtabs = json_decode($tv['input_properties']['formtabs'],1);
+                    $formtabs = json_decode($tv['input_properties']['formtabs'], true);
                 }
-                $migxKeys = $this->getMIGXKeys($formtabs[0]['fields'], $tv['name']);
-                $output = array_merge($output,$migxKeys);
+
+                $migxKeys = $formtabs[0]['fields'] ? $this->getMIGXKeys($formtabs[0]['fields'], $tv['name']) : [];
+                $output = array_merge($output, $migxKeys);
             }
 
         }
@@ -206,9 +208,10 @@ class FlatFilters
     private function getMIGXKeys(array $fields, string $tvName): array
     {
         $output = [];
-        foreach ($fields as $field){
-            $output[] = [
-                'key' => "{$tvName}_{$field['field']}",
+        foreach ($fields as $field) {
+            $key = "{$tvName}_{$field['field']}";
+            $output[$key] = [
+                'key' => $key,
                 'caption' => $this->modx->lexicon("ff_frontend_{$tvName}_{$field['field']}"),
             ];
         }
@@ -224,15 +227,20 @@ class FlatFilters
         $q->where("`id` IN (SELECT `config_id` FROM {$crTableName} WHERE `resource_id` = {$id})");
         $q->prepare();
         $configs = $this->modx->getIterator('ffConfiguration', $q);
-        $sql = "DELETE FROM :tableName WHERE `resource_id` = :id";
-        $statement = $this->modx->prepare($sql);
+
         foreach ($configs as $config) {
             $classKey = "ffIndex{$config->get('id')}";
-            $statement->execute(['tableName'=> $this->modx->getTableName($classKey), 'id' => $id]);
+            if ($tableName = $this->modx->getTableName($classKey)) {
+                $sql = "DELETE FROM {$tableName} WHERE `rid` = :id";
+                $statement = $this->modx->prepare($sql);
+                $statement->execute(['id' => $id]);
+            }
         }
 
         // удаляем записи о принадлежности ресурса к определенным конфигурациям
-        $statement->execute(['tableName'=> $crTableName, 'id' => $id]);
+        $sql = "DELETE FROM {$crTableName} WHERE `rid` = :id";
+        $statement = $this->modx->prepare($sql);
+        $statement->execute(['id' => $id]);
     }
 
     public function getParents(int $id, int $parentId, string $classKey = 'modResource'): array
@@ -250,8 +258,9 @@ class FlatFilters
         return $parents;
     }
 
-    public function getParentIds(int $parentId, array$parents = []): array
+    public function getParentIds(int $parentId, array $parents = []): array
     {
+        if ($parentId === 0) return [];
         $parents[] = $parentId;
         $parent = $this->modx->getObject('modResource', $parentId);
         return $this->getParentIds($parent->get('parent'), $parents);
@@ -265,20 +274,50 @@ class FlatFilters
         ];
     }
 
-    public function indexing(array $resourceData): void
+    public function indexingDocument(array $resourceData): void
     {
         $parents = $this->getParents($resourceData['id'], $resourceData['parent'], $resourceData['class_key']);
-        $configs = $this->modx->getIterator('ffConfiguration');
+        $configs = $this->modx->getIterator('ffConfiguration', ['type:IN' => ['resources', 'products']]);
         foreach ($configs as $config) {
-            if(!$Indexing = $this->loadClass($config->toArray(), 'indexing')){
+            if (!$Indexing = $this->loadClass($config->toArray(), 'indexing')) {
                 continue;
             }
-            if ($config->get('parents')) {
-                $configParents = explode(',', $config->get('parents'));
+            if ($configParents = $config->get('parents')) {
+                $configParents = explode(',', $configParents);
                 foreach ($configParents as $configParent) {
                     if (in_array($configParent, $parents)) {
                         $Indexing->indexResource($resourceData);
                     }
+                }
+            } else {
+                $Indexing->indexResource($resourceData);
+            }
+        }
+    }
+
+    public function indexingUser(modUser $user): void
+    {
+        $configs = $this->modx->getIterator('ffConfiguration', ['type' => 'customers']);
+        $profile = $user->getOne('Profile');
+        $profileData = $profile->toArray();
+        $extended = $profileData['extended'];
+        unset($profileData['extended']);
+        $resourceData = array_merge($user->toArray(), $profileData, $extended);
+        foreach ($configs as $config) {
+            if (!$Indexing = $this->loadClass($config->toArray(), 'indexing')) {
+                continue;
+            }
+            if ($groups = $config->get('groups')) {
+                $names = [];
+                $groups = explode(',', $groups);
+                $q = $this->modx->newQuery('modUserGroup');
+                $q->select('name');
+                $q->where(['id:IN' => $groups]);
+                if ($q->prepare() && $q->stmt->execute()) {
+                    $names = $q->stmt->fetchAll(PDO::FETCH_COLUMN);
+                }
+                if (empty($names) || $user->isMember($names)) {
+                    $Indexing->indexResource($resourceData);
                 }
             } else {
                 $Indexing->indexResource($resourceData);

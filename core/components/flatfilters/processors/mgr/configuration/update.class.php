@@ -55,6 +55,11 @@ class FlatFiltersConfigurationUpdateProcessor extends modObjectUpdateProcessor
     private function updateTable()
     {
         $tableName = "{$this->tablePrefix}ff_indexes_{$this->object->get('id')}";
+        if(!$this->modx->query("SHOW TABLES LIKE '{$tableName}'")->rowCount()){
+            $this->createTable();
+            $this->modxBuilder->writeSchema(true, true, false);
+            $this->modxBuilder->parseSchema();
+        }
         $oldFilters = json_decode($this->object->get('filters'), 1);
         $oldParents = $this->object->get('parents') ? explode(',', $this->object->get('parents')) : [];
         $properties = $this->getProperties();
@@ -67,6 +72,8 @@ class FlatFiltersConfigurationUpdateProcessor extends modObjectUpdateProcessor
             'timestamp' => "`#fieldName#` INT(10) NULL DEFAULT NULL",
             'tinyint' => "`#fieldName#` TINYINT(1) UNSIGNED DEFAULT NULL",
         ];
+
+
         $sql = "ALTER TABLE {$tableName} ";
         $addFields = array_diff(array_keys($filters), array_keys($oldFilters));
         $dropFields = array_diff(array_keys($oldFilters), array_keys($filters));
@@ -104,6 +111,48 @@ class FlatFiltersConfigurationUpdateProcessor extends modObjectUpdateProcessor
             $this->modxBuilder->writeSchema(true, true, false);
             $this->modxBuilder->parseSchema();
         }
+    }
+
+    private function createTable(){
+
+        $fields = [];
+        $keys = [];
+        $tableName = "{$this->tablePrefix}ff_indexes_{$this->object->get('id')}";
+        $filters = json_decode($this->object->get('filters'),1);
+        $defaults = [
+            'varchar' => "`#fieldName#` VARCHAR(50) CHARACTER SET utf8mb4 DEFAULT NULL",
+            'int' => "`#fieldName#` INT(10) UNSIGNED DEFAULT NULL",
+            'decimal' => " `#fieldName#` DECIMAL(12,2) DEFAULT NULL",
+            'timestamp' => "`#fieldName#` INT(10) NULL DEFAULT NULL",
+            'tinyint' => "`#fieldName#` TINYINT(1) UNSIGNED DEFAULT NULL",
+        ];
+
+        $sql = "CREATE TABLE `{$tableName}` (
+              `id` int(10) UNSIGNED NOT NULL,
+              `rid` int(10) UNSIGNED NOT NULL,
+              #fields#
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='ffIndex{$this->object->get('id')}'";
+
+        $addKeys = "ALTER TABLE `{$tableName}`
+                    ADD PRIMARY KEY (`id`),
+                    ADD KEY `rid` (`rid`),
+                    #keys#";
+
+        $modify = "ALTER TABLE `{$tableName}` MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=349326";
+
+        foreach($filters as $key => $data){
+            $fields[] = str_replace('#fieldName#', $key,$defaults[$data['field_type']]);
+            $keys[] = "ADD KEY `{$key}` (`{$key}`)";
+        }
+        $fields = implode(','.PHP_EOL, $fields);
+        $sql = str_replace('#fields#', $fields, $sql);
+
+        $keys = implode(','.PHP_EOL, $keys);
+        $addKeys = str_replace('#keys#', $keys, $addKeys);
+
+        $this->modx->exec($sql);
+        $this->modx->exec($addKeys);
+        $this->modx->exec($modify);
     }
 
     private function prepareDefaultFilters(){

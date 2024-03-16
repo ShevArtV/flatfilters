@@ -8,9 +8,20 @@ class IndexingProducts extends IndexingResources
 
     protected function getQuery(): xPDOQuery_mysql
     {
-        $q = parent::getQuery();
-        $q->andCondition(['class_key' => $this->classKey]);
+        $allowedTpls = $this->modx->getOption('ff_allowed_tpls', '', '');
+        $q = $this->modx->newQuery($this->classKey);
+        $q->where(['deleted' => false, 'published' => true, 'class_key' => $this->classKey]);
+        if ($allowedTpls) {
+            $q->andCondition("`template` IN ({$allowedTpls})");
+        }
+        if (!empty($this->config['parents'])) {
+            $q = $this->addParentConditions(explode(',', $this->config['parents']), $q);
+        }
 
+        $this->modx->invokeEvent('ffOnGetIndexingQuery', [
+            'configData' => $this->config,
+            'query' => $q,
+        ]);
         return $q;
     }
 

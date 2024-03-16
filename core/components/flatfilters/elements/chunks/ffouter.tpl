@@ -15,7 +15,11 @@
     </div>
     <button type="reset" class="btn-secondary btn" form="filterForm" data-ff-reset>Сбросить</button>
 </div>
-
+<div class="d-flex justify-content-between align-items-center" data-ff-selected>
+    <template data-ff-tpl>
+        <button class="btn-warning btn" data-ff-item="$key-$value">$caption</button>
+    </template>
+</div>
 <div class="row" data-ff-results>
     {$resources}
 </div>

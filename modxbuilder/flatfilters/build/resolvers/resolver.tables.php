@@ -102,6 +102,23 @@ if ($transport->xpdo) {
             break;
 
         case xPDOTransport::ACTION_UNINSTALL:
+            $objects = [];
+            $schemaFile = MODX_CORE_PATH . 'components/flatfilters/model/schema/flatfilters.mysql.schema.xml';
+            if (is_file($schemaFile)) {
+                $schema = new SimpleXMLElement($schemaFile, 0, true);
+                if (isset($schema->object)) {
+                    foreach ($schema->object as $obj) {
+                        $objects[] = (string)$obj['class'];
+                    }
+                }
+                unset($schema);
+            }
+            foreach ($objects as $class) {
+                $table = $modx->getTableName($class);
+                $sql = "DROP TABLE  {$table}";
+                $stmt = $modx->prepare($sql);
+                $stmt->execute();
+            }
             break;
     }
 }
