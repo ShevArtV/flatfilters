@@ -30,11 +30,13 @@ export default class MainHandler {
         this.resetBtn = document.querySelector(this.config.resetBtnSelector);
         this.presets = SendIt.getComponentCookie('presets', 'FlatFilters');
         this.selected = document.querySelector(this.config.selectedSelector);
+        this.params = new URLSearchParams(window.location.search);
         this.captions = {};
         this.initialize();
     }
 
     initialize() {
+
         document.addEventListener(this.config.beforeSendEvent, (e) => {
             if (e.detail.target.closest(this.config.formSelector) && this.checkPreset(e.detail)) {
                 this.beforeSendHandler(e)
@@ -125,8 +127,8 @@ export default class MainHandler {
             }
         });
         this.resetSearchParams();
-        await this.update();
-        this.resetBtn && (this.resetBtn.classList.add(this.config.hideClass));
+        await this.update(this.presets.filtering);
+        this.resetBtn && this.resetBtn.classList.add(this.config.hideClass);
 
         document.dispatchEvent(new CustomEvent(this.events.reset, {
             bubbles: true,
@@ -183,6 +185,7 @@ export default class MainHandler {
 
         target.remove();
         filter && filter.dispatchEvent(new Event('change', {bubbles: true}))
+        !window.location.search && this.resetBtn && this.resetBtn.classList.add(this.config.hideClass);
     }
 
     renderValue(key, value, caption) {
@@ -216,8 +219,19 @@ export default class MainHandler {
 
 
     async sendResponse(preset) {
+        this.setHistory();
         SendIt.setComponentCookie('sitrusted', '1');
         await SendIt.Sending.prepareSendParams(this.form, preset, 'change');
+    }
+
+    setHistory() {
+        const url = window.location.href;
+
+        if (this.params && this.params.toString()) {
+            window.history.replaceState({}, '', url.split('?')[0] + '?' + this.params.toString());
+        } else {
+            window.history.replaceState({}, '', url.split('?')[0]);
+        }
     }
 
     beforeSendHandler(e) {
@@ -312,7 +326,7 @@ export default class MainHandler {
         for (const param of urlParams) {
             const selector = this.config.filterSelector.replace('${key}', param[0]);
             const filter = this.form.querySelector(selector);
-            if(!filter) continue;
+            if (!filter) continue;
             const type = this.getElemType(filter);
             let values = []
             switch (type) {
@@ -345,46 +359,36 @@ export default class MainHandler {
     }
 
     setSearchParams(type, key, value = '') {
-        const url = window.location.href;
-        let params = new URLSearchParams(window.location.search);
+        if(['limit','page'].includes(key)) return;
 
         switch (type) {
             case 'checkbox':
             case 'multiple':
-                params = this.addMultipleParam(key, type, params);
+                this.addMultipleParam(key, type);
                 break;
             case 'numrange':
-                params = this.addNumrangeParam(key, params);
+                this.addNumrangeParam(key);
                 break;
             default:
-                params = this.addTextParam(key, value, params);
+                this.addTextParam(key, value);
                 break;
         }
-
-
-        if (params.toString()) {
-            window.history.replaceState({}, '', url.split('?')[0] + '?' + params.toString());
-        } else {
-            window.history.replaceState({}, '', url.split('?')[0]);
-        }
     }
 
-    addTextParam(key, value, params) {
+    addTextParam(key, value) {
         if (value) {
-            params.set(key, value);
+            this.params.set(key, value);
         } else {
-            params.delete(key);
+            this.params.delete(key);
         }
-        return params;
     }
 
-    addNumrangeParam(key, params) {
-        params.delete(key);
+    addNumrangeParam(key) {
+        this.params.delete(key);
         const values = this.getNumrangeValues(key);
         if (values.start !== values.min || values.end !== values.max) {
-            params.set(key, `${values.start},${values.end}`);
+            this.params.set(key, `${values.start},${values.end}`);
         }
-        return params;
     }
 
     getNumrangeValues(key) {
@@ -400,13 +404,12 @@ export default class MainHandler {
         };
     }
 
-    addMultipleParam(key, type, params) {
-        params.delete(key);
+    addMultipleParam(key, type) {
+        this.params.delete(key);
         const values = type === 'multiple' ? this.getMultipleValues(key) : this.getCheckboxValue(key);
         if (values.length) {
-            params.set(key, values.join(','));
+            this.params.set(key, values.join(','));
         }
-        return params;
     }
 
     getMultipleValues(key) {

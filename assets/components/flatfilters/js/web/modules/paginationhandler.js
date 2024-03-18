@@ -116,9 +116,25 @@ export default class PaginationHandler {
             pageNum = 1;
         }
         this.pageInput.value = pageNum;
-        FlatFilters.MainHandler.setSearchParams('text', 'page', pageNum > 1 ? pageNum : '');
+        this.setSearchParams(pageNum);
 
         this.form && !nosend && this.sendResponse();
+    }
+
+    setSearchParams(pageNum){
+        const url = window.location.href;
+        const params = new URLSearchParams(window.location.search);
+        if (pageNum > 1) {
+            params.set('page', pageNum);
+        } else {
+            params.delete('page');
+        }
+
+        if (params && params.toString()) {
+            window.history.replaceState({}, '', url.split('?')[0] + '?' + params.toString());
+        } else {
+            window.history.replaceState({}, '', url.split('?')[0]);
+        }
     }
 
     async sendResponse() {
