@@ -74,7 +74,7 @@ class IndexingResources implements IndexingInterface
         return $query;
     }
 
-    protected function getResourceData($resource)
+    public function getResourceData($resource)
     {
         $resourceData = $resource->toArray();
         return array_merge($this->getUserFields($resourceData['createdby']), $resourceData, $this->getResourceTVs($resourceData['id']));

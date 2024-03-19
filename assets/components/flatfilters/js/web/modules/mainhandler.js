@@ -79,9 +79,8 @@ export default class MainHandler {
                 if (this.selected) {
                     this.showSelectedValues();
                 }
-            } else {
-                this.resetBtn && (this.resetBtn.classList.add(this.config.hideClass));
             }
+            this.toggleVisabilityResetBtn();
         })
     }
 
@@ -126,7 +125,7 @@ export default class MainHandler {
                     break;
             }
         });
-        this.resetSearchParams();
+        this.params = new URLSearchParams();
         await this.update(this.presets.filtering);
         this.resetBtn && this.resetBtn.classList.add(this.config.hideClass);
 
@@ -219,7 +218,9 @@ export default class MainHandler {
 
 
     async sendResponse(preset) {
-        this.setHistory();
+        if (preset !== this.presets.disabling) {
+            this.setHistory();
+        }
         SendIt.setComponentCookie('sitrusted', '1');
         await SendIt.Sending.prepareSendParams(this.form, preset, 'change');
     }
@@ -258,11 +259,9 @@ export default class MainHandler {
                 }
             }))
         }
-
+        this.toggleVisabilityResetBtn();
         if (!result.data.getDisabled) {
             this.setDisabled(filters, result.data);
-
-            window.location.search && this.resetBtn && this.resetBtn.classList.remove(this.config.hideClass);
 
             if (this.selected) {
                 this.resetSelectedValues();
@@ -280,6 +279,16 @@ export default class MainHandler {
         const totalCountBlock = document.querySelector('#total');
         if (('totalResources' in result.data) && totalCountBlock) {
             totalCountBlock.textContent = result.data.totalResources;
+        }
+    }
+
+    toggleVisabilityResetBtn() {
+        const getParams = window.location.search.replace('?', '').split('&');
+
+        if( !window.location.search || (window.location.search && getParams.length === 1 && window.location.search.indexOf('page') !== -1) ){
+            this.resetBtn && this.resetBtn.classList.add(this.config.hideClass);
+        }else{
+            window.location.search && this.resetBtn && this.resetBtn.classList.remove(this.config.hideClass);
         }
     }
 
@@ -353,13 +362,8 @@ export default class MainHandler {
         }
     }
 
-    resetSearchParams() {
-        const url = window.location.href;
-        window.history.replaceState({}, '', url.split('?')[0]);
-    }
-
     setSearchParams(type, key, value = '') {
-        if(['limit','page'].includes(key)) return;
+        if (['limit', 'page'].includes(key)) return;
 
         switch (type) {
             case 'checkbox':

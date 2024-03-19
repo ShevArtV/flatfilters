@@ -160,7 +160,9 @@ class FlatFiltersConfigurationUpdateProcessor extends modObjectUpdateProcessor
         $filters = json_decode($properties['filters'], 1);
         $defaultFilters = [];
         foreach($filters as $key => $data){
-            if(!$data['default_value']) continue;
+            if (!isset($data['default_value'])) {
+                continue;
+            }
             $defaultFilters[$key] = [
                 'filter_type' => $data['filter_type'],
                 'value' => $data['default_value'],

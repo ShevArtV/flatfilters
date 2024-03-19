@@ -22,10 +22,10 @@ class FilteringResources implements FilteringInterface
     protected int $page;
     protected int $offset;
 
-    public function __construct($modx, $pdoTools, $configData)
+    public function __construct($modx, $configData)
     {
         $this->modx = $modx;
-        $this->pdoTools = $pdoTools;
+        $this->pdoTools = $modx->getParser()->pdoTools;
         $this->configData = $configData;
 
         $this->modx->addPackage('flatfilters', MODX_BASE_PATH . 'core/components/flatfilters/model/');
@@ -80,7 +80,10 @@ class FilteringResources implements FilteringInterface
         $hash = md5(json_encode($this->values));
         $upd = $this->properties['upd'];
         unset($this->properties['upd']);
-        $_SESSION['flatfilters'][$this->configData['id']]['properties'] = array_merge($_SESSION['flatfilters'][$this->configData['id']]['properties'] ?: [], $this->properties);
+        $_SESSION['flatfilters'][$this->configData['id']]['properties'] = array_merge(
+            $_SESSION['flatfilters'][$this->configData['id']]['properties'] ?: [],
+            $this->properties
+        );
 
         $rids = $_SESSION['flatfilters'][$this->configData['id']]['rids'];
         if (!$rids || $_SESSION['flatfilters'][$this->configData['id']]['hash'] !== $hash || $upd) {
@@ -122,7 +125,6 @@ class FilteringResources implements FilteringInterface
     {
         $rids = [];
         $sql = $this->getFilterSql();
-
         /* основная фильтрация */
         if ($statement = $this->execute($sql, $this->tokens)) {
             $_SESSION['flatfilters'][$this->configData['id']]['totalResources'] = $statement->rowCount();
@@ -139,9 +141,18 @@ class FilteringResources implements FilteringInterface
         $conditions = [];
         foreach ($this->filters as $key => $data) {
             $value = $this->values[$key] ?: $this->defaultFilters[$key]['value'];
-            if (!$value) continue;
+            if (!isset($value)) {
+                continue;
+            }
             $conditions[] = $this->getCondition($key, $value, $data['filter_type']);
         }
+
+        $this->modx->invokeEvent('ffOnBeforeSetFilterConditions', [
+            'conditions' => $conditions,
+            'configData' => $this->configData,
+            'FlatFilters' => $this
+        ]);
+        $conditions = is_array($this->modx->event->returnedValues['conditions']) ? $this->modx->event->returnedValues['conditions'] : $conditions;
 
         if (!empty($conditions)) {
             $sql .= ' WHERE ' . implode(' AND ', $conditions);
@@ -291,18 +302,24 @@ class FilteringResources implements FilteringInterface
         $output = [];
         $where = '';
         $defaultFilterKeys = $this->defaultFilters ? array_keys($this->defaultFilters) : [];
-
         if (!empty($this->defaultFilters)) {
             $conditions = [];
+            $this->tokens = [];
             foreach ($this->defaultFilters as $k => $data) {
-                if (!$data['value']) continue;
+                if (!isset($data['value'])) {
+                    continue;
+                }
                 $conditions[] = $this->getCondition($k, $data['value'], $data['filter_type']);
             }
-            if ($conditions) $where = implode('AND ', $conditions);
+            if ($conditions) {
+                $where = implode('AND ', $conditions);
+            }
         }
 
         foreach ($this->filters as $key => $value) {
-            if (in_array($key, $defaultFilterKeys)) continue;
+            if (in_array($key, $defaultFilterKeys)) {
+                continue;
+            }
             if (strpos($value['filter_type'], 'range') === false) {
                 $output = $this->getNoRangeValues($where, $key, $value, $output);
             } else {
@@ -321,7 +338,6 @@ class FilteringResources implements FilteringInterface
         } else {
             $sql = "SELECT DISTINCT `{$key}` FROM {$this->tableName} WHERE `{$key}` IS NOT NULL AND `{$key}` != ''";
         }
-
         if ($statement = $this->execute($sql, $this->tokens)) {
             $output[$key]['values'] = $statement->fetchAll(PDO::FETCH_COLUMN);
             $output[$key]['type'] = $value['filter_type'] ?: 'string';
@@ -373,7 +389,9 @@ class FilteringResources implements FilteringInterface
         ];
 
         foreach ($this->filters as $key => $value) {
-            if (in_array($key, $defaultFilterKeys)) continue;
+            if (in_array($key, $defaultFilterKeys)) {
+                continue;
+            }
             if (strpos($value['filter_type'], 'range') === false) {
                 $output['distinctKeys'][] = $key;
             } else {

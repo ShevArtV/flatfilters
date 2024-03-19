@@ -109,7 +109,9 @@ class FlatFiltersConfigurationCreateProcessor extends modObjectCreateProcessor
         $filters = json_decode($properties['filters'], 1);
         $defaultFilters = [];
         foreach($filters as $key => $data){
-            if(!$data['default_value']) continue;
+            if (!isset($data['default_value'])) {
+                continue;
+            }
             $defaultFilters[$key] = [
                 'value' => $data['default_value'],
                 'sign' => $this->signs[$data['sign']] ?: 'eq'

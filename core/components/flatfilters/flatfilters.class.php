@@ -274,14 +274,15 @@ class FlatFilters
         ];
     }
 
-    public function indexingDocument(array $resourceData): void
+    public function indexingDocument(modResource $resource): void
     {
-        $parents = $this->getParents($resourceData['id'], $resourceData['parent'], $resourceData['class_key']);
+        $parents = $this->getParents($resource->get('id'), $resource->get('parent'), $resource->get('class_key'));
         $configs = $this->modx->getIterator('ffConfiguration', ['type:IN' => ['resources', 'products']]);
         foreach ($configs as $config) {
             if (!$Indexing = $this->loadClass($config->toArray(), 'indexing')) {
                 continue;
             }
+            $resourceData = $Indexing->getResourceData($resource);
             if ($configParents = $config->get('parents')) {
                 $configParents = explode(',', $configParents);
                 foreach ($configParents as $configParent) {

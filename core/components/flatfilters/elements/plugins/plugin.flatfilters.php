@@ -1,4 +1,5 @@
 <?php
+
 include_once MODX_CORE_PATH . 'components/flatfilters/handlers/indexing.class.php';
 $FF = $modx->getService('flatfilters', 'Flatfilters', MODX_CORE_PATH . 'components/flatfilters/');
 
@@ -12,9 +13,8 @@ switch ($modx->event->name) {
     case 'OnDocFormSave':
     case 'OnResourceUndelete':
         $FF->removeResourceIndex($id);
-        $resourceData = $resource->toArray();
-        if ($resourceData['published'] && !$resourceData['deleted']) {
-            $FF->indexingDocument($resourceData);
+        if ($resource->get('published') && !$resource->get('deleted')) {
+            $FF->indexingDocument($resource);
         }
         break;
 
