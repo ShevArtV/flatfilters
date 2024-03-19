@@ -18,15 +18,21 @@ if(!empty($output['filtersValues']) && $return !== 'data'){
     foreach($output['filtersValues'] as $key => $item){
         $item['key'] = $key;
         $item['options'] = '';
+        $item['props'] = $scriptProperties;
         if(is_array($item['values'])){
-            $chunk = $scriptProperties["{$key}TplRow"] ?: $scriptProperties["defaultTplRow"];
+            $chunk = $scriptProperties["{$key}TplRow"] ?? $scriptProperties["defaultTplRow"];
+            if(!$chunk) continue;
             foreach($item['values'] as $idx => $value){
-                $item['options'] .= $FF->pdoTools->parseChunk($chunk, ['key' => $key, 'value' => $value, 'idx' => $idx]);
+                $params = array_merge($scriptProperties, ['key' => $key, 'value' => $value, 'idx' => $idx]);
+                $item['options'] .= $FF->pdoTools->parseChunk($chunk, $params);
             }
         }
-        $chunk = $scriptProperties["{$key}TplOuter"] ?: $scriptProperties["defaultTplOuter"];
+        $chunk = $scriptProperties["{$key}TplOuter"] ?? $scriptProperties["defaultTplOuter"];
+        if(!$chunk) continue;
+        $item = array_merge($scriptProperties, $item);
         $output['filters'] .= $FF->pdoTools->parseChunk($chunk, $item);
     }
 }
+
 $output = array_merge($scriptProperties,$output);
-return $FF->pdoTools->parseChunk($wrapper, $output);
+return $wrapper ? $FF->pdoTools->parseChunk($wrapper, $output) : $output;
