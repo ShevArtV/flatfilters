@@ -38,7 +38,7 @@ export default class MainHandler {
     initialize() {
 
         document.addEventListener(this.config.beforeSendEvent, (e) => {
-            if (e.detail.target.closest(this.config.formSelector) && this.checkPreset(e.detail)) {
+            if (this.checkPreset(e.detail) && e.detail.target.closest(this.config.formSelector)) {
                 this.beforeSendHandler(e)
             }
         })
@@ -154,11 +154,12 @@ export default class MainHandler {
     clearFilter(target) {
         const keyValue = target.dataset[this.config.itemKey].split('-');
         const filterSelector = this.config.filterSelector.replace('${key}', keyValue[0]);
-        let filter = this.form.querySelector(filterSelector);
+        let filter = this.form.querySelector(filterSelector) || document.querySelector(`[form="${this.form.id}"]${filterSelector}`);
         const type = this.getElemType(filter);
         switch (type) {
             case 'checkbox':
-                filter = this.form.querySelector(`${filterSelector}[value="${keyValue[1]}"]`);
+                filter = this.form.querySelector(`${filterSelector}[value="${keyValue[1]}"]`)
+                    || document.querySelector(`[form="${this.form.id}"]${filterSelector}[value="${keyValue[1]}"]`);
                 filter.checked = false;
                 break;
             case 'multiple':
@@ -334,7 +335,7 @@ export default class MainHandler {
         const urlParams = new URLSearchParams(window.location.search);
         for (const param of urlParams) {
             const selector = this.config.filterSelector.replace('${key}', param[0]);
-            const filter = this.form.querySelector(selector);
+            const filter = this.form.querySelector(selector) || document.querySelector(`[form="${this.form.id}"]${selector}`);
             if (!filter) continue;
             const type = this.getElemType(filter);
             let values = []
