@@ -223,7 +223,7 @@ export default class MainHandler {
             this.setHistory();
         }
         SendIt.setComponentCookie('sitrusted', '1');
-        await SendIt.Sending.prepareSendParams(this.form, preset, 'change');
+        this.form && await SendIt.Sending.prepareSendParams(this.form, preset, 'change');
     }
 
     setHistory() {

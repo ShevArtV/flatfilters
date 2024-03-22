@@ -120,7 +120,8 @@ class IndexingResources implements IndexingInterface
             foreach ($item as $k => $v) {
                 if (is_string($v) && strpos($v, '[{') !== false) {
                     $item[$k] = json_decode($v, 1); // преобразуем поля типа migx в массив
-                    $this->decodeJsonValue($value[$k]);
+                    if(!is_array($item[$k])) continue;
+                    $this->decodeJsonValue($item[$k]);
                 }
             }
             $value[$key] = $item;

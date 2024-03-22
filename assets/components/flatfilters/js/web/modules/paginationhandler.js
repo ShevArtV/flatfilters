@@ -12,23 +12,24 @@ export default class PaginationHandler {
             currentPageInputSelector: '[data-pn-current]',
             totalPagesSelector: '[data-pn-total]',
             limitSelector: '[data-pn-limit]',
-            hideClass: 'd-none'
+            hideClass: 'd-none',
+            presetKey: 'siPreset'
         }
 
         this.config = Object.assign(defaults, config);
-        const presets = SendIt.getComponentCookie('presets', 'FlatFilters');
-        this.preset = presets.pagination;
         this.initialize();
     }
 
     initialize() {
         this.wrapper = document.querySelector(this.config.paginationWrapSelector);
+        if(!this.wrapper) return;
         this.pageInput = this.wrapper.querySelector(this.config.currentPageInputSelector);
         this.gotoFirstBtn = this.wrapper.querySelector(this.config.firstPageBtnSelector);
         this.gotoLastBtn = this.wrapper.querySelector(this.config.lastPageBtnSelector);
         this.gotoNextBtn = this.wrapper.querySelector(this.config.nextPageBtnSelector);
         this.gotoPrevBtn = this.wrapper.querySelector(this.config.prevPageBtnSelector);
         this.form = this.pageInput.form || this.wrapper.closest('form');
+        this.preset = this.pageInput.dataset[this.config.presetKey] || this.form.dataset[this.config.presetKey];
 
         this.buttonsHandler(this.pageInput.value);
 
