@@ -1,6 +1,5 @@
 <?php
 
-include_once MODX_CORE_PATH . 'components/flatfilters/handlers/indexing.class.php';
 $FF = $modx->getService('flatfilters', 'Flatfilters', MODX_CORE_PATH . 'components/flatfilters/');
 
 switch ($modx->event->name) {
@@ -19,12 +18,16 @@ switch ($modx->event->name) {
         break;
 
     case 'OnUserSave':
-        $FF->removeResourceIndex($user->get('id'));
-        $FF->indexingUser($user);
+        if($user){
+            $FF->removeResourceIndex($user->get('id'));
+            $FF->indexingUser($user);
+        }
         break;
 
     case 'OnUserRemove':
-        $FF->removeResourceIndex($user->get('id'));
+        if($user){
+            $FF->removeResourceIndex($user->get('id'));
+        }
         break;
 
     case 'OnResourceDelete':

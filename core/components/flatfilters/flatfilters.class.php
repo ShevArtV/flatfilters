@@ -221,6 +221,9 @@ class FlatFilters
 
     public function removeResourceIndex(int $id)
     {
+        if($id === 0){
+            return;
+        }
         // удаляем индексы ресурса из всех конфигураций, к которым он принадлежит
         $crTableName = $this->modx->getTableName('ffConfigResource');
         $q = $this->modx->newQuery('ffConfiguration');
