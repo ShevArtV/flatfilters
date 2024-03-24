@@ -35,9 +35,11 @@ class IndexingResources implements IndexingInterface
         $resources = $this->modx->getIterator($this->classKey, $q);
 
         foreach ($resources as $resource) {
-            $resourceData = $this->getResourceData($resource);
-            $this->indexResource($resourceData);
             $offset++;
+            if(!$resourceData = $this->getResourceData($resource)){
+                continue;
+            }
+            $this->indexResource($resourceData);
         }
 
         return ['total' => $total, 'offset' => $offset];

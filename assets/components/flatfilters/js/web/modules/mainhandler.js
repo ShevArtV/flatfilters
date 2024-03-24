@@ -255,8 +255,7 @@ export default class MainHandler {
                 cancelable: false,
                 detail: {
                     resultsBlock: resultsBlock,
-                    data: result.data,
-                    FlatFilters: this
+                    data: result.data
                 }
             }))
         }
@@ -323,8 +322,7 @@ export default class MainHandler {
                         element: el,
                         key: key,
                         data: data,
-                        filters: filters,
-                        FlatFilters: this
+                        filters: filters
                     }
                 }))
             }

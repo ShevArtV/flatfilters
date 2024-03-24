@@ -302,8 +302,8 @@ class FilteringResources implements FilteringInterface
         $output = [];
         $where = '';
         $defaultFilterKeys = $this->defaultFilters ? array_keys($this->defaultFilters) : [];
+        $conditions = [];
         if (!empty($this->defaultFilters)) {
-            $conditions = [];
             $this->tokens = [];
             foreach ($this->defaultFilters as $k => $data) {
                 if (!isset($data['value'])) {
@@ -311,9 +311,17 @@ class FilteringResources implements FilteringInterface
                 }
                 $conditions[] = $this->getCondition($k, $data['value'], $data['filter_type']);
             }
-            if ($conditions) {
-                $where = implode('AND ', $conditions);
-            }
+        }
+
+        $this->modx->invokeEvent('ffOnBeforeGetFilterValues', [
+            'configData' => $this->configData,
+            'conditions' => $conditions,
+            'FlatFilters' => $this
+        ]);
+        $conditions = is_array($this->modx->event->returnedValues['conditions']) ? $this->modx->event->returnedValues['conditions'] : $conditions;
+
+        if ($conditions) {
+            $where = implode('AND ', $conditions);
         }
 
         foreach ($this->filters as $key => $value) {
