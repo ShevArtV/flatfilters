@@ -31,7 +31,7 @@ class FlatFilters
         $this->modx->addPackage('migx', $this->core_path . 'components/migx/model/');
         $this->modx->addPackage('flatfilters', MODX_BASE_PATH . 'core/components/flatfilters/model/');
 
-        $this->pdoTools = $this->modx->getService('pdoTools');
+        $this->pdoTools = $this->modx->getParser()->pdoTools;
         $this->ms2 = $this->modx->getService('miniShop2');
 
         $this->loadLexicons();
@@ -51,7 +51,9 @@ class FlatFilters
         $pathToTypes = $this->core_path . $this->modx->getOption('ff_path_to_types', '', 'components/flatfilters/types.inc.php');
         if (file_exists($pathToTypes)) {
             $this->types = include($pathToTypes);
-            if (!$this->ms2) unset($this->types['products']);
+            if (!$this->ms2) {
+                unset($this->types['products']);
+            }
             return true;
         }
         $this->modx->log(1, "[FlatFilters::getTypes] Файл {$pathToTypes} не найден");
@@ -115,7 +117,9 @@ class FlatFilters
             $this->modx->executedQueries++;
             $items = $statement->fetchAll(PDO::FETCH_ASSOC);
             foreach ($items as $item) {
-                if (in_array($item['Field'], $excludeFields)) continue;
+                if (in_array($item['Field'], $excludeFields)) {
+                    continue;
+                }
                 $output[$item['Field']] = [
                     'key' => $item['Field'],
                     'caption' => $this->modx->lexicon("ff_frontend_{$item['Field']}"),
@@ -155,7 +159,9 @@ class FlatFilters
     public function getOptionsKeys(): array
     {
         $output = [];
-        if (!$this->ms2) return $output;
+        if (!$this->ms2) {
+            return $output;
+        }
         $sql = "SELECT `key` FROM {$this->tablePrefix}ms2_options";
         if ($statement = $this->modx->query($sql)) {
             $items = $statement->fetchAll(PDO::FETCH_COLUMN);
@@ -189,7 +195,6 @@ class FlatFilters
             } else {
                 if ($tv['input_properties']['configs']) {
                     if ($config = $this->modx->getObject('migxConfig', ['name' => $tv['input_properties']['configs']])) {
-
                         $formtabs = json_decode($config->get('formtabs'), true);
                     }
                 } else {
@@ -199,7 +204,6 @@ class FlatFilters
                 $migxKeys = $formtabs[0]['fields'] ? $this->getMIGXKeys($formtabs[0]['fields'], $tv['name']) : [];
                 $output = array_merge($output, $migxKeys);
             }
-
         }
         //$this->modx->log(1, print_r($output,1));
         return $output;
@@ -263,10 +267,15 @@ class FlatFilters
 
     public function getParentIds(int $parentId, array $parents = []): array
     {
-        if ($parentId === 0) return [];
+        if ($parentId === 0) {
+            return [];
+        }
         $parents[] = $parentId;
         $parent = $this->modx->getObject('modResource', $parentId);
-        return $this->getParentIds($parent->get('parent'), $parents);
+        if ($parent->get('parent') !== 0) {
+            $parents = array_merge($parents, $this->getParentIds($parent->get('parent'), $parents));
+        }
+        return array_unique($parents);
     }
 
     public function getFormParams(): array
@@ -348,7 +357,7 @@ class FlatFilters
 
         include_once($pathToClass);
         $className = $this->types[$type][$method]['className'];
-        return $method === 'indexing' ? new $className($this->modx, $configData) : new $className($this->modx, $this->pdoTools, $configData);
+        return new $className($this->modx, $configData);
     }
 
     public function regClientScripts(int $tplId): void
@@ -371,4 +380,3 @@ class FlatFilters
         setcookie('FlatFilters', json_encode($data), 0, '/');
     }
 }
-
