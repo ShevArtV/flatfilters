@@ -335,6 +335,13 @@ class FilteringResources implements FilteringInterface
             }
         }
 
+        $this->modx->invokeEvent('ffOnAfterGetFilterValues', [
+            'configData' => $this->configData,
+            'output' => $output,
+            'FlatFilters' => $this
+        ]);
+        $output = is_array($this->modx->event->returnedValues['output']) ? $this->modx->event->returnedValues['output'] : $output;
+
         $_SESSION['flatfilters'][$this->configData['id']]['properties']['all_ranges'] = $output;
         return $output;
     }
