@@ -5,7 +5,7 @@ require_once 'indexinginterface.class.php';
 class IndexingResources implements IndexingInterface
 {
     protected ModX $modx;
-    protected array $config;
+    public array $config;
     protected string $tablePrefix;
     protected string $classKey = 'modResource';
 
