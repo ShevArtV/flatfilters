@@ -272,7 +272,7 @@ class FlatFilters
         }
         $parents[] = $parentId;
         $parent = $this->modx->getObject('modResource', $parentId);
-        if ($parent->get('parent') !== 0) {
+        if ($parent && $parent->get('parent') !== 0) {
             $parents = array_merge($parents, $this->getParentIds($parent->get('parent'), $parents));
         }
         return array_unique($parents);
