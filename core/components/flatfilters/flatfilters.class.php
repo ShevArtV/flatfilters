@@ -270,10 +270,17 @@ class FlatFilters
         if ($parentId === 0) {
             return [];
         }
+
         $parents[] = $parentId;
-        $parent = $this->modx->getObject('modResource', $parentId);
-        if ($parent && $parent->get('parent') !== 0) {
-            $parents = array_merge($parents, $this->getParentIds($parent->get('parent'), $parents));
+        $q = $this->modx->newQuery('modResource');
+        $q->select('parent');
+        $q->where(['id' => $parentId]);
+        $tstart = microtime(true);
+        if ($q->prepare() && $q->stmt->execute()) {
+            $this->modx->queryTime += microtime(true) - $tstart;
+            $this->modx->executedQueries++;
+            $result = $q->stmt->fetchAll(PDO::FETCH_COLUMN);
+            $parents = array_merge($parents, $this->getParentIds($result[0], $parents));
         }
         return array_unique($parents);
     }
