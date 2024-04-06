@@ -279,8 +279,8 @@ class FlatFilters
         if ($q->prepare() && $q->stmt->execute()) {
             $this->modx->queryTime += microtime(true) - $tstart;
             $this->modx->executedQueries++;
-            $result = $q->stmt->fetchAll(PDO::FETCH_COLUMN);
-            $parents = array_merge($parents, $this->getParentIds($result[0], $parents));
+            $grandParent = $q->stmt->fetch(PDO::FETCH_COLUMN);
+            $parents = array_merge($parents, $this->getParentIds($grandParent, $parents));
         }
         return array_unique($parents);
     }
