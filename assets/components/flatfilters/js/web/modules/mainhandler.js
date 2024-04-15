@@ -332,6 +332,7 @@ export default class MainHandler {
     showSelectedValues() {
         const urlParams = new URLSearchParams(window.location.search);
         for (const param of urlParams) {
+            if(param[0] === 'sortby') continue;
             const selector = this.config.filterSelector.replace('${key}', param[0]);
             const filter = this.form.querySelector(selector) || document.querySelector(`[form="${this.form.id}"]${selector}`);
             if (!filter) continue;

@@ -51,6 +51,9 @@ class FilteringResources implements FilteringInterface
     {
         if (!empty($_REQUEST['sortby'])) {
             $sortby = explode('|', $_REQUEST['sortby']);
+            if(is_string($this->properties['sortby'])){
+                $this->properties['sortby'] = json_decode($this->properties['sortby'], true) ?: [];
+            }
             $this->properties['sortby'][$sortby[0]] = $sortby[1];
         }
 
@@ -61,7 +64,7 @@ class FilteringResources implements FilteringInterface
             foreach ($filtersKeys as $key) {
                 $value = $this->modx->getOption($key, $_REQUEST, false);
                 if ($value) {
-                    $this->values[$key] = $value;
+                    $this->values[$key] = ($this->filters[$key]['filter_type'] === 'multiple' && !is_array($value)) ? explode(',', $value) : $value;
                 }
             }
         }
