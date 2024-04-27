@@ -12,7 +12,7 @@ class FilteringResources implements FilteringInterface
     public array $filters;
     protected array $defaultFilters;
     public array $values = [];
-    protected array $tokens = [];
+    public array $tokens = [];
     protected string $tablePrefix;
     protected string $corePath;
     protected string $tableName;
