@@ -34,22 +34,17 @@ export default function returnConfigs() {
             resultSelector: '[data-ff-results]',
             resetBtnSelector: '[data-ff-reset]',
             filtersSelector: '[data-ff-filter]',
+            selectedSelector: '[data-ff-selected]',
+            totalSelector: '[data-ff-total]',
+            timeSelector: '[data-ff-time]',
+            tplSelector: '[data-ff-tpl]',
+            itemSelector: '[data-ff-item="${key}-${value}"]',
             filterSelector: '[data-ff-filter="${key}"]',
             filterKey: 'ffFilter',
-            hideClass: 'd-none'
-        },
-        PaginationHandler: {
-            pathToScripts: './modules/paginationhandler.js?v=56554',
-            sendEvent: 'si:send:finish',
-            paginationWrapSelector: '[data-pn-pagination]',
-            firstPageBtnSelector: '[data-pn-first]',
-            lastPageBtnSelector: '[data-pn-last]',
-            lastPageKey: 'pnLast',
-            prevPageBtnSelector: '[data-pn-prev]',
-            nextPageBtnSelector: '[data-pn-next]',
-            currentPageInputSelector: '[data-pn-current]',
-            totalPagesSelector: '[data-pn-total]',
-            hideClass: 'd-none'
+            captionKey: 'ffCaption',
+            itemKey: 'ffItem',
+            totalKey: 'ffTotal',
+            hideClass: 'v_hidden',
         }
     };
 }

@@ -1,6 +1,6 @@
 export default class RangeSlider {
     constructor(config) {
-        if(window.FlatFilters && window.FlatFilters.RangeSlider) return window.FlatFilters.RangeSlider;
+        if (window.FlatFilters && window.FlatFilters.RangeSlider) return window.FlatFilters.RangeSlider;
         const defaults = {
             jsPath: 'assets/components/flatfilters/js/web/libs/nouislider/nouislider.min.js',
             cssPath: 'assets/components/flatfilters/css/web/libs/nouislider/nouislider.css',
@@ -8,6 +8,7 @@ export default class RangeSlider {
             rangeSelector: '[data-ff-range]',
             rangeSelectorAlt: '[data-ff-range="${key}"]',
             rangeKey: 'ffRange',
+            stepKey: 'ffStep',
             startFieldSelector: '[data-ff-start="${key}"]',
             endFieldSelector: '[data-ff-end="${key}"]',
             minKey: 'ffMin',
@@ -19,7 +20,7 @@ export default class RangeSlider {
     }
 
     loadScript(path, callback, cssPath) {
-        if (document.querySelector('script[src="' + path + '"]')){
+        if (document.querySelector('script[src="' + path + '"]')) {
             callback(path, "ok");
             return;
         }
@@ -64,37 +65,36 @@ export default class RangeSlider {
         }
     }
 
-    initialize(){
+    initialize() {
         const ranges = document.querySelectorAll(this.config.rangeSelector);
-        if(ranges.length){
+        if (ranges.length) {
             ranges.forEach(el => {
                 this.createRange(el);
             });
         }
     }
 
-    createRange(el){
-        if(typeof noUiSlider === 'undefined') return;
+    createRange(el) {
+        if (typeof noUiSlider === 'undefined') return;
 
         const {min, max, startField, endField, start, end} = this.getItems(el.dataset[this.config.rangeKey]);
-
         noUiSlider.create(el, {
             start: [start, end],
-            connect: true,
             range: {
                 'min': min,
                 'max': max
             },
-            step: 1
+            connect: true,
+            step: el.dataset[this.config.stepKey] ? Number(el.dataset[this.config.stepKey]) : 1
         });
 
         startField.addEventListener('change', (e) => {
-            if(e.isTrusted){
+            if (e.isTrusted) {
                 el.noUiSlider.set([startField.value, null]);
             }
         });
         endField.addEventListener('change', (e) => {
-            if(e.isTrusted){
+            if (e.isTrusted) {
                 el.noUiSlider.set([null, endField.value]);
             }
         });
@@ -106,15 +106,15 @@ export default class RangeSlider {
 
         el.noUiSlider.on('change', (values, handle) => {
             SendIt?.setComponentCookie('sitrusted', '1')
-            if(handle === 1){
+            if (handle === 1) {
                 endField.dispatchEvent(new Event('change', {bubbles: true}));
-            }else{
+            } else {
                 startField.dispatchEvent(new Event('change', {bubbles: true}));
             }
         });
     }
 
-    getItems(key){
+    getItems(key) {
         const rangeSelector = this.config.rangeSelectorAlt.replace('${key}', key);
         const el = document.querySelector(rangeSelector);
         const min = Number(el.dataset[this.config.minKey]);
@@ -126,7 +126,7 @@ export default class RangeSlider {
         return {el, min, max, startField, endField, start, end}
     }
 
-    reset(key){
+    reset(key) {
         const {el, min, max} = this.getItems(key);
         el.noUiSlider.set([min, max]);
     }

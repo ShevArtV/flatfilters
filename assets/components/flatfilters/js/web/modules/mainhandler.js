@@ -10,35 +10,38 @@ export default class MainHandler {
             resetBtnSelector: '[data-ff-reset]',
             filtersSelector: '[data-ff-filter]',
             selectedSelector: '[data-ff-selected]',
+            totalSelector: '[data-ff-total]',
+            timeSelector: '[data-ff-time]',
             tplSelector: '[data-ff-tpl]',
             itemSelector: '[data-ff-item="${key}-${value}"]',
             filterSelector: '[data-ff-filter="${key}"]',
             filterKey: 'ffFilter',
             captionKey: 'ffCaption',
             itemKey: 'ffItem',
-            hideClass: 'd-none'
+            totalKey: 'ffTotal',
+            hideClass: 'v_hidden',
         }
         this.events = {
-            disabling: 'ff:values:disabled',
-            loaded: 'ff:results:loaded',
             reset: 'ff:after:reset',
-            render: 'ff:before:render',
             remove: 'ff:before:remove',
+            render: 'ff:before:render',
+            disabling: 'ff:values:disabled'
         };
         this.config = Object.assign(defaults, config);
         this.form = document.querySelector(this.config.formSelector);
         this.resetBtn = document.querySelector(this.config.resetBtnSelector);
         this.presets = SendIt.getComponentCookie('presets', 'FlatFilters');
         this.selected = document.querySelector(this.config.selectedSelector);
+        this.totalBlock = document.querySelector(this.config.totalSelector);
+        this.timeBlock = document.querySelector(this.config.timeSelector);
         this.params = new URLSearchParams(window.location.search);
         this.captions = {};
         this.initialize();
     }
 
     initialize() {
-
         document.addEventListener(this.config.beforeSendEvent, (e) => {
-            if (this.checkPreset(e.detail) && e.detail.target.closest(this.config.formSelector)) {
+            if (this.checkPreset(e.detail)) {
                 this.beforeSendHandler(e)
             }
         })
@@ -74,6 +77,7 @@ export default class MainHandler {
         })
 
         document.addEventListener('ff:init', (e) => {
+            this.sendResponse(this.presets.total);
             if (window.location.search) {
                 this.sendResponse(this.presets.disabling);
                 if (this.selected) {
@@ -115,10 +119,10 @@ export default class MainHandler {
                     filter.checked = false;
                     break;
                 case 'daterange':
-                    FlatFilters.DatePicker.reset(filter);
+                    FlatFilters?.DatePicker?.reset(filter);
                     break;
                 case 'numrange':
-                    FlatFilters.RangeSlider.reset(filter.dataset[this.config.filterKey]);
+                    FlatFilters?.RangeSlider?.reset(filter.dataset[this.config.filterKey]);
                     break;
                 default:
                     filter.value = '';
@@ -126,7 +130,7 @@ export default class MainHandler {
             }
         });
         this.params = new URLSearchParams();
-        await this.update(this.presets.filtering);
+        await this.update();
         this.resetBtn && this.resetBtn.classList.add(this.config.hideClass);
 
         document.dispatchEvent(new CustomEvent(this.events.reset, {
@@ -167,7 +171,6 @@ export default class MainHandler {
                 break;
             case 'numrange':
                 FlatFilters?.RangeSlider?.reset(keyValue[0]);
-                filter = false;
                 break;
             default:
                 filter.value = '';
@@ -222,8 +225,13 @@ export default class MainHandler {
         if (preset !== this.presets.disabling) {
             this.setHistory();
         }
+        const params = new FormData(this.form);
+        const onsend = [];
+        for(const [key, value] of params.entries()) {
+            onsend.push(key);
+        }
         SendIt.setComponentCookie('sitrusted', '1');
-        this.form && await SendIt.Sending.prepareSendParams(this.form, preset, 'change');
+        this.form && await SendIt.Sending.prepareSendParams(this.form, preset, params);
     }
 
     setHistory() {
@@ -237,31 +245,30 @@ export default class MainHandler {
     }
 
     beforeSendHandler(e) {
-        e.detail.fetchOptions.headers['X-SIFORM'] = e.detail.target.closest(this.config.formSelector).dataset[this.config.formKey];
+        e.detail.fetchOptions.headers['X-SIFORM'] = '';
+        if(e.detail.target.closest(this.config.formSelector)){
+            e.detail.fetchOptions.headers['X-SIFORM'] = e.detail.target.closest(this.config.formSelector).dataset[this.config.formKey];
+        }
+
+        for(const [key, value] of e.detail.fetchOptions.body.entries()) {
+            const filterSelector = this.config.filterSelector.replace('${key}', key.replace('[]', ''));
+            if (document.querySelector(filterSelector) && !this.params.has(key.replace('[]', ''))){
+                e.detail.fetchOptions.body.delete(key);
+            }
+        }
+
     }
 
     responseHandler(result) {
         //console.log(result);
         if (!result.data) return;
-        const resultsBlock = document.querySelector(this.config.resultSelector);
         const filters = document.querySelectorAll(this.config.filtersSelector);
         const updElem = this.form.querySelector('input[name="upd"][type="hidden"]');
         updElem && updElem.remove();
 
-        if (result.data.resources && resultsBlock) {
-            resultsBlock.innerHTML = result.data.resources;
-            document.dispatchEvent(new CustomEvent(this.events.loaded, {
-                bubbles: true,
-                cancelable: false,
-                detail: {
-                    resultsBlock: resultsBlock,
-                    data: result.data
-                }
-            }))
-        }
         this.toggleVisabilityResetBtn();
         if (!result.data.getDisabled) {
-            this.setDisabled(filters, result.data);
+            result.data.filterValues && this.setDisabled(filters, result.data);
 
             if (this.selected) {
                 this.resetSelectedValues();
@@ -271,15 +278,9 @@ export default class MainHandler {
             this.sendResponse(this.presets.disabling);
         }
 
-        const timeBlock = document.querySelector('#time');
-        if (result.data.totalTime && timeBlock) {
-            timeBlock.textContent = result.data.totalTime;
-        }
-
-        const totalCountBlock = document.querySelector('#total');
-        if (('totalResources' in result.data) && totalCountBlock) {
-            totalCountBlock.textContent = result.data.totalResources;
-        }
+        this.timeBlock && result.data.totalTime && (this.timeBlock.textContent = result.data.totalTime);
+        const totalCount = result.data[this.totalBlock.dataset[this.config.totalKey]] || 0;
+        this.totalBlock && (this.totalBlock.textContent = totalCount);
     }
 
     toggleVisabilityResetBtn() {
@@ -295,21 +296,25 @@ export default class MainHandler {
     setDisabled(filters, data) {
         filters.forEach(el => {
             const key = el.dataset[this.config.filterKey];
-            if (data.filterValues && data.filterValues[key] && data.filterValues[key]['values']) {
+            if (data.filterValues && data.filterValues[key]) {
                 const type = this.getElemType(el);
+                const values = data.filterValues[key]['values'];
                 switch (type) {
                     case 'select':
+                        if(!values) break;
                         for (let i = 1; i < el.options.length; i++) {
-                            el.options[i].disabled = !data.filterValues[key]['values'].includes(el.options[i].value);
+                            el.options[i].disabled = !values.includes(el.options[i].value);
                         }
                         break;
                     case 'radio':
-                        el.disabled = !data.filterValues[key]['values'].includes(el.value);
+                        if(!values) break;
+                        el.disabled = !values.includes(el.value);
                         break;
                     case 'checkbox':
+                        if(!values) break;
                         const selector = this.config.filterSelector.replace('${key}', key);
                         if (document.querySelectorAll(selector).length === 1) {
-                            el.disabled = !data.filterValues[key]['values'].includes(el.value);
+                            el.disabled = !values.includes(el.value);
                         }
                         break;
                 }
@@ -345,6 +350,9 @@ export default class MainHandler {
                 case 'multiple':
                     values = this.getMultipleValues(param[0]);
                     break;
+                case 'select':
+                    this.captions[param[0]] = [{value: filter.value, caption: filter.options[filter.selectedIndex].dataset[this.config.captionKey] || filter.value}]
+                    break;
                 case 'numrange':
                     values = this.getNumrangeValues(param[0]);
                     break;
@@ -363,7 +371,7 @@ export default class MainHandler {
     }
 
     setSearchParams(type, key, value = '') {
-        if (['limit', 'page'].includes(key)) return;
+        if (['limit'].includes(key)) return;
 
         switch (type) {
             case 'checkbox':
@@ -396,7 +404,7 @@ export default class MainHandler {
     }
 
     getNumrangeValues(key) {
-        const {min, max, startField, endField} = FlatFilters.RangeSlider.getItems(key);
+        const {min, max, startField, endField} = FlatFilters?.RangeSlider?.getItems(key);
         this.captions[key] = [
             {value: startField.value + ',' + endField.value, caption: startField.value + ' - ' + endField.value},
         ]
@@ -446,9 +454,9 @@ export default class MainHandler {
         let type = 'text';
         switch (elem.tagName) {
             case 'INPUT':
-                const startFieldSelector = FlatFilters.RangeSlider.config.startFieldSelector.replace('="${key}"', '');
-                const endFieldSelector = FlatFilters.RangeSlider.config.endFieldSelector.replace('="${key}"', '');
-                const pickerSelector = FlatFilters.DatePicker.config.pickerSelector;
+                const startFieldSelector = FlatFilters?.RangeSlider?.config.startFieldSelector.replace('="${key}"', '');
+                const endFieldSelector = FlatFilters?.RangeSlider?.config.endFieldSelector.replace('="${key}"', '');
+                const pickerSelector = FlatFilters?.DatePicker?.config.pickerSelector;
                 if (elem.closest(startFieldSelector) || elem.closest(endFieldSelector)) {
                     type = 'numrange';
                 }

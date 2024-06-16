@@ -6,7 +6,7 @@ class FilteringResources implements FilteringInterface
 {
 
     protected ModX $modx;
-    protected $pdoTools;
+    protected object $pdoTools;
     protected array $configData;
     protected array $properties;
     public array $filters;
@@ -16,33 +16,32 @@ class FilteringResources implements FilteringInterface
     protected string $tablePrefix;
     protected string $corePath;
     protected string $tableName;
+    protected string $totalVar;
     protected string $resourcesProp = 'resources';
     protected int $total = 0;
     protected int $limit;
-    protected int $page;
     protected int $offset;
 
     public function __construct($modx, $configData)
     {
         $this->modx = $modx;
-        $this->pdoTools = $modx->getParser()->pdoTools;
         $this->configData = $configData;
-
-        $this->modx->addPackage('flatfilters', MODX_BASE_PATH . 'core/components/flatfilters/model/');
-
         $this->initialize();
     }
 
     protected function initialize(): void
     {
+        $this->modx->addPackage('flatfilters', MODX_BASE_PATH . 'core/components/flatfilters/model/');
+        $this->pdoTools = $this->modx->getParser()->pdoTools;
         $this->tablePrefix = $this->modx->getOption('table_prefix');
         $this->corePath = $this->modx->getOption('core_path');
-        $this->tableName = $this->modx->getTableName('ffIndex' . $this->configData['id']);
+        $this->tableName = $this->modx->getTableName('ffIndex' . $this->configData['id']) ?: '';
         $this->configData['scriptProperties']['parents'] = $this->configData['parents'] ?: 0;
         $this->properties = $this->configData['scriptProperties'];
         $this->filters = json_decode($this->configData['filters'], true) ?: [];
         $this->defaultFilters = json_decode($this->configData['default_filters'], true) ?: [];
         $this->limit = (int)$this->modx->getOption('limit', $this->properties, 10);
+        $this->totalVar = $this->properties['totalVar'] ?: 'total';
 
         $this->prepareFilters();
     }
@@ -51,20 +50,39 @@ class FilteringResources implements FilteringInterface
     {
         if (!empty($_REQUEST['sortby'])) {
             $sortby = explode('|', $_REQUEST['sortby']);
-            if(is_string($this->properties['sortby'])){
+            if (is_string($this->properties['sortby'])) {
                 $this->properties['sortby'] = json_decode($this->properties['sortby'], true) ?: [];
             }
-            $this->properties['sortby'][$sortby[0]] = $sortby[1];
+            $this->properties['sortby'] = array_merge([$sortby[0] => $sortby[1]], $this->properties['sortby']??[]);
         }
 
         $filtersKeys = array_keys($this->filters);
-        $this->page = (int)$this->modx->getOption('page', $_REQUEST, 1);
+        $pageKeyPrefix = $this->properties['pagination'] ?: '';
+        $this->page = (int)$this->modx->getOption($pageKeyPrefix . 'page', $_REQUEST, 1);
         $this->offset = ($this->page - 1) >= 1 ? (($this->page - 1) * $this->limit) : 0;
+
+        /*   $e = new \Exception;
+           $this->modx->log(1, print_r($_REQUEST, 1));
+           $this->modx->log(1, print_r($e->getTraceAsString(), 1));*/
         if ($filtersKeys) {
             foreach ($filtersKeys as $key) {
                 $value = $this->modx->getOption($key, $_REQUEST, false);
                 if ($value) {
-                    $this->values[$key] = ($this->filters[$key]['filter_type'] === 'multiple' && !is_array($value)) ? explode(',', $value) : $value;
+                    $this->values[$key] = $value;
+                    if ($this->filters[$key]['filter_type'] === 'multiple' || $this->filters[$key]['filter_type'] === 'numrange') {
+                        $this->values[$key] = !is_array($value) ? explode(',', $value) : $value;
+                    }
+                    if ($this->filters[$key]['filter_type'] === 'numrange') {
+                        $start = explode('.', $this->values[$key][0]);
+                        if ((int)$start[1] === 0) {
+                            $this->values[$key][0] = (int)$start[0];
+                        }
+                        $end = explode('.', $this->values[$key][1]);
+                        if ((int)$end[1] === 0) {
+                            $this->values[$key][1] = (int)$end[0];
+                        }
+                    }
+                    //$this->modx->log(1, print_r([$this->values[$key], $this->filters[$key]['filter_type']], 1));
                 }
             }
         }
@@ -74,6 +92,7 @@ class FilteringResources implements FilteringInterface
     {
         $time_start = microtime(true);
         $output = [];
+        $output['html'] = $_SESSION['flatfilters'][$this->configData['id']]['html'];
 
         $this->modx->invokeEvent('ffOnBeforeFilter', [
             'configData' => $this->configData,
@@ -82,12 +101,13 @@ class FilteringResources implements FilteringInterface
 
         $hash = md5(json_encode($this->values));
         $upd = $this->properties['upd'];
-        unset($this->properties['upd']);
+        //unset($this->properties['upd']);
+
         $_SESSION['flatfilters'][$this->configData['id']]['properties'] = array_merge(
             $_SESSION['flatfilters'][$this->configData['id']]['properties'] ?: [],
             $this->properties
         );
-
+        $getDisabled = 0;
         $rids = $_SESSION['flatfilters'][$this->configData['id']]['rids'];
         if (!$rids || $_SESSION['flatfilters'][$this->configData['id']]['hash'] !== $hash || $upd) {
             $rids = $this->filter();
@@ -100,26 +120,22 @@ class FilteringResources implements FilteringInterface
 
             $_SESSION['flatfilters'][$this->configData['id']]['hash'] = $hash;
             $_SESSION['flatfilters'][$this->configData['id']]['rids'] = $rids;
-            $output['getDisabled'] = 1;
-            $this->page = 1;
+
+            $getDisabled = $this->properties['noDisabled'] ? 0 : 1;
         }
 
         if ($rids) {
-            $rids = $this->getOutputIds($rids);
-            if ($this->properties['element']) {
-                $output['resources'] = $this->runRender($rids);
-            } else {
-                $output['resources'] = $rids;
-            }
-        } else {
-            $output['resources'] = $this->pdoTools->parseChunk($this->properties["empty"], []);
+            $output['ids'] = $this->getOutputIds($rids);
         }
 
         $time_end = microtime(true);
-        $output['totalTime'] = sprintf('TOTAL TIME %f sec.', $time_end - $time_start);
-        $output['totalPages'] = ceil($_SESSION['flatfilters'][$this->configData['id']]['totalResources'] / $this->limit);
-        $output['currentPage'] = $this->page;
-        $output['totalResources'] = $_SESSION['flatfilters'][$this->configData['id']]['totalResources'];
+        $output['resourcesProp'] = $this->resourcesProp;
+        $output['sortby'] = $this->properties['sortby'];
+        $_SESSION['flatfilters'][$this->configData['id']]['totalVar'] = $this->totalVar;
+        $_SESSION['flatfilters'][$this->configData['id']]['totalTime'] = sprintf('TOTAL TIME %f sec.', $time_end - $time_start);
+        $_SESSION['flatfilters'][$this->configData['id']]['getDisabled'] = $getDisabled;
+        $_SESSION['flatfilters'][$this->configData['id']]['currentPage'] = ($_SESSION['flatfilters'][$this->configData['id']]['hash'] !== $hash || $upd) ? 1 : $this->page;
+        $this->modx->setPlaceholder($this->totalVar, $_SESSION['flatfilters'][$this->configData['id']][$this->totalVar]);
 
         return $output;
     }
@@ -130,14 +146,14 @@ class FilteringResources implements FilteringInterface
         $sql = $this->getFilterSql();
         /* основная фильтрация */
         if ($statement = $this->execute($sql, $this->tokens)) {
-            $_SESSION['flatfilters'][$this->configData['id']]['totalResources'] = $statement->rowCount();
+            $_SESSION['flatfilters'][$this->configData['id']][$this->totalVar] = $statement->rowCount();
             $rids = $statement->fetchAll(PDO::FETCH_COLUMN);
         }
 
         return implode(', ', $rids);
     }
 
-    protected function getFilterSql()
+    protected function getFilterSql(): string
     {
         $sql = "SELECT SQL_CALC_FOUND_ROWS `rid` FROM {$this->tableName} ";
 
@@ -156,7 +172,6 @@ class FilteringResources implements FilteringInterface
             'FlatFilters' => $this
         ]);
         $conditions = is_array($this->modx->event->returnedValues['conditions']) ? $this->modx->event->returnedValues['conditions'] : $conditions;
-
         if (!empty($conditions)) {
             $sql .= ' WHERE ' . implode(' AND ', $conditions);
         }
@@ -166,7 +181,7 @@ class FilteringResources implements FilteringInterface
         return $sql;
     }
 
-    protected function getCondition($key, $value, $type)
+    protected function getCondition($key, $value, $type): string
     {
         $sign = $this->getCompareSign($key, $type);
 
@@ -213,7 +228,7 @@ class FilteringResources implements FilteringInterface
         return $condition;
     }
 
-    protected function getCompareSign($key, $type)
+    protected function getCompareSign($key, $type): string
     {
         $sign = '=';
         if ($this->defaultFilters[$key]) {
@@ -228,7 +243,7 @@ class FilteringResources implements FilteringInterface
         return $sign;
     }
 
-    protected function execute($sql, $tokens = [])
+    protected function execute(string $sql, ?array $tokens = []): ?PDOStatement
     {
         $statement = $this->modx->prepare($sql);
         $time_start = microtime(true);
@@ -238,9 +253,11 @@ class FilteringResources implements FilteringInterface
             $this->modx->executedQueries++;
             return $statement;
         }
+
+        return null;
     }
 
-    protected function getOutputIds($rids)
+    protected function getOutputIds(string $rids): string
     {
         $sql = $this->getOutputSQL($rids);
 
@@ -258,13 +275,13 @@ class FilteringResources implements FilteringInterface
         return $rids;
     }
 
-    protected function getOutputSQL($rids)
+    protected function getOutputSQL(string $rids): string
     {
         $resourceTableName = $this->modx->getTableName('modResource');
         return "SELECT `Resource`.`id` FROM $resourceTableName Resource WHERE `Resource`.`id` IN ($rids)";
     }
 
-    protected function getSortby()
+    protected function getSortby(): string
     {
         /* готовим условия сортировки результатов фильтрации */
         $sortby = [];
@@ -280,27 +297,7 @@ class FilteringResources implements FilteringInterface
         return $sortStr;
     }
 
-    protected function runRender($rids)
-    {
-        $props = array_merge($this->properties, [
-            'sortby' => "",
-            'offset' => 0,
-            'limit' => $this->limit
-        ]);
-        unset($props['element'], $props['filters'], $props['offset'], $props['page'], $props['filtersKeys'], $props['configId']);
-        $props[$this->resourcesProp] = $rids;
-
-        $this->modx->invokeEvent('ffOnBeforeRender', [
-            'configData' => $this->configData,
-            'props' => $props,
-            'FlatFilters' => $this
-        ]);
-        $props = is_array($this->modx->event->returnedValues['props']) ? $this->modx->event->returnedValues['props'] : $props;
-
-        return $this->pdoTools->runSnippet($this->properties['element'], $props);
-    }
-
-    public function getAllFiltersValues()
+    public function getAllFiltersValues(): array
     {
         $output = [];
         $where = '';
@@ -346,10 +343,41 @@ class FilteringResources implements FilteringInterface
         $output = is_array($this->modx->event->returnedValues['output']) ? $this->modx->event->returnedValues['output'] : $output;
 
         $_SESSION['flatfilters'][$this->configData['id']]['properties']['all_ranges'] = $output;
+
         return $output;
     }
 
-    protected function getNoRangeValues($where, $key, $value, $output)
+    public function renderFilterForm(array $scriptProperties, ?array $output = [])
+    {
+        if (!empty($output['filtersValues'])) {
+            foreach ($output['filtersValues'] as $key => $item) {
+                $item['key'] = $key;
+                $item['options'] = '';
+                $item['props'] = $scriptProperties;
+                if (is_array($item['values'])) {
+                    $chunk = $scriptProperties["{$key}TplRow"] ?? $scriptProperties["defaultTplRow"];
+                    if (!$chunk) {
+                        continue;
+                    }
+                    foreach ($item['values'] as $idx => $value) {
+                        $params = array_merge($scriptProperties, ['key' => $key, 'value' => $value, 'idx' => $idx]);
+                        $item['options'] .= $this->pdoTools->parseChunk($chunk, $params);
+                    }
+                }
+                $chunk = $scriptProperties["{$key}TplOuter"] ?? $scriptProperties["defaultTplOuter"];
+                if (!$chunk) {
+                    continue;
+                }
+                $item = array_merge($scriptProperties, $item);
+                $output['filters'] .= $this->pdoTools->parseChunk($chunk, $item);
+            }
+        }
+
+        $output = array_merge($scriptProperties, $output);
+        return $scriptProperties['wrapper'] ? $this->pdoTools->parseChunk($scriptProperties['wrapper'], $output) : $output;
+    }
+
+    protected function getNoRangeValues($where, $key, $value, $output): array
     {
         if ($where) {
             $sql = "SELECT DISTINCT `{$key}` FROM {$this->tableName} WHERE `{$key}` IS NOT NULL AND `{$key}` != '' AND {$where}";
@@ -364,7 +392,7 @@ class FilteringResources implements FilteringInterface
         return $output;
     }
 
-    protected function getRangeValues($where, $key, $value, $output)
+    protected function getRangeValues($where, $key, $value, $output): array
     {
         if ($where) {
             $sql = "SELECT MIN(`{$key}`) as `min`, MAX(`{$key}`) as `max` FROM {$this->tableName} WHERE {$where}";
@@ -382,7 +410,7 @@ class FilteringResources implements FilteringInterface
         return $output;
     }
 
-    public function getCurrentFiltersValues()
+    public function getCurrentFiltersValues(): array
     {
         $output = [];
         $defaultFilterKeys = $this->defaultFilters ? array_keys($this->defaultFilters) : [];
@@ -399,7 +427,7 @@ class FilteringResources implements FilteringInterface
         return $output;
     }
 
-    protected function prepareCurrentFiltersKeys($defaultFilterKeys)
+    protected function prepareCurrentFiltersKeys($defaultFilterKeys): array
     {
         $output = [
             'distinctKeys' => [],
@@ -420,12 +448,16 @@ class FilteringResources implements FilteringInterface
         return $output;
     }
 
-    protected function getMinMaxValues($minMaxKeys, $output)
+    protected function getMinMaxValues($minMaxKeys, $output): array
     {
         $where = $_SESSION['flatfilters'][$this->configData['id']]['rids'];
 
         $sqlMinMax = implode(', ', $minMaxKeys);
-        $sql = "SELECT {$sqlMinMax} FROM {$this->tableName} WHERE `rid` IN ({$where})";
+        $sql = "SELECT {$sqlMinMax} FROM {$this->tableName}";
+        if ($where) {
+            $sql .= " WHERE `rid` IN ({$where})";
+        }
+
         if ($statement = $this->execute($sql)) {
             $result = $statement->fetchAll(PDO::FETCH_ASSOC);
             foreach ($result[0] as $k => $v) {
@@ -437,13 +469,16 @@ class FilteringResources implements FilteringInterface
         return $output;
     }
 
-    protected function getDistinctValues($distinctKeys, $output)
+    protected function getDistinctValues($distinctKeys, $output): array
     {
         $where = $_SESSION['flatfilters'][$this->configData['id']]['rids'];
         $values = [];
 
         foreach ($distinctKeys as $key) {
-            $sql = "SELECT DISTINCT `{$key}` FROM {$this->tableName} WHERE `rid` IN ({$where})";
+            $sql = "SELECT DISTINCT `{$key}` FROM {$this->tableName}";
+            if ($where) {
+                $sql .= " WHERE `rid` IN ({$where})";
+            }
 
             if ($statement = $this->execute($sql)) {
                 $values[$key]['values'] = $statement->fetchAll(PDO::FETCH_COLUMN);

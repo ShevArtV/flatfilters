@@ -2,7 +2,7 @@
 
 interface IndexingInterface{
     public function indexConfig();
-    public function indexResource(array $resourceData);
+    public function indexResource(array $resourceData): void;
 
-    public function getResourceData($resource);
+    public function getResourceData(object $resource): array;
 }

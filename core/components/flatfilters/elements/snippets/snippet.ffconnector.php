@@ -1,5 +1,4 @@
 <?php
-
 $configId = (int) $_REQUEST['configId'];
 
 if(!$configId || !($config = $modx->getObject('ffConfiguration', $configId))){
@@ -18,12 +17,13 @@ if(!$Filtering = $FF->loadClass($configData, 'filtering')){
 $headers = getallheaders();
 $preset = $headers['x-sipreset'];
 $presetName = $modx->getOption('ff_preset_name', '', 'flatfilters');
-if(in_array($preset, [$FF->presets['filtering'], $FF->presets['pagination']])){
-    $result =  $Filtering->run();
-}
-if($preset === $FF->presets['disabling']){
+
+if($preset === $FF->presets['disabling'] && !$scriptProperties['noDisabled']){
     $result['filterValues'] = $Filtering->getCurrentFiltersValues();
-    //$modx->log(1, print_r($result, 1));
 }
+
+$totalVar = $_SESSION['flatfilters'][$configId]['totalVar'];
+$result[$totalVar] = $_SESSION['flatfilters'][$configId][$totalVar];
+$result['totalTime'] = $_SESSION['flatfilters'][$configId]['totalTime'];
 
 return $SendIt->success('', $result);

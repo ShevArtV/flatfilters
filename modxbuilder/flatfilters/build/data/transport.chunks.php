@@ -25,7 +25,7 @@ foreach($realChunks as $realChunk){
     $chunkData = $realChunk->toArray();
     $chunkData['id'] = 0;
     //TODO remove comment if you want to make your chunks static
-    //$chunkData['static'] = 1;
+    $chunkData['static'] = 1;
     $chunk->fromArray($chunkData);
     $chunks[] = $chunk;
 }

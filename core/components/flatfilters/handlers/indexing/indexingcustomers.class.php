@@ -32,7 +32,8 @@ class IndexingCustomers extends IndexingResources
         return $query;
     }
 
-    public function getResourceData($resource){
+    public function getResourceData(object $resource): array
+    {
         return array_merge($this->getUserFields($resource->get('id')), ['id' => $resource->get('id')]);
     }
 }

@@ -76,7 +76,7 @@ class IndexingResources implements IndexingInterface
         return $query;
     }
 
-    public function getResourceData($resource)
+    public function getResourceData(object $resource): array
     {
         $resourceData = $resource->toArray();
         return array_merge($this->getUserFields($resourceData['createdby']), $resourceData, $this->getResourceTVs($resourceData['id']));
@@ -132,7 +132,7 @@ class IndexingResources implements IndexingInterface
         return $value;
     }
 
-    protected function getUserFields($user_id): array
+    protected function getUserFields(int $user_id): array
     {
         $output = [];
         if (!$user_id) return $output;
@@ -164,7 +164,7 @@ class IndexingResources implements IndexingInterface
         return $output;
     }
 
-    public function indexResource(array $resourceData)
+    public function indexResource(array $resourceData): void
     {
         $resourceData['rid'] = $resourceData['id'];
         unset($resourceData['id']);
@@ -213,6 +213,14 @@ class IndexingResources implements IndexingInterface
 
         foreach ($resourceData as $key => $value) {
             if (!in_array($key, $keys)) continue;
+
+            $this->modx->invokeEvent('ffOnBeforeSetIndexValue', [
+                'key' => $key,
+                'value' => $value,
+                'FlatFilters' => $this
+            ]);
+            $value = $this->modx->event->returnedValues['value'] ?: $value;
+
             if (is_array($value)) {
                 $arrays[$key] = $value;
             } else {
@@ -230,7 +238,7 @@ class IndexingResources implements IndexingInterface
         return [$indexes, $arrays];
     }
 
-    protected function getCombinations($arrays): array
+    protected function getCombinations(array $arrays): array
     {
         $result = [];
 
@@ -293,7 +301,7 @@ class IndexingResources implements IndexingInterface
         }
     }
 
-    protected function addBinding($data): void
+    protected function addBinding(array $data): void
     {
         if (!$this->modx->getCount('ffConfigResource', $data)) {
             $configResource = $this->modx->newObject('ffConfigResource');

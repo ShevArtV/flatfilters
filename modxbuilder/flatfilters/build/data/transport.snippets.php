@@ -25,7 +25,7 @@ foreach($realSnippets as $realSnippet){
     $snippetData = $realSnippet->toArray();
     $snippetData['id'] = 0;
     //TODO remove comment if you want to make your snippets static
-    //$snippetData['static'] = 1;
+    $snippetData['static'] = 1;
     $snippet->fromArray($snippetData);
     $snippets[] = $snippet;
 }

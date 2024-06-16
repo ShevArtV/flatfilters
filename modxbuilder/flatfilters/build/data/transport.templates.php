@@ -24,7 +24,7 @@ foreach($realTemplates as $realTemplate){
     $templateData = $realTemplate->toArray();
     $templateData['id'] = 0;
     //TODO remove comment if you want to make templates static
-    //$templateData['static'] = 1;
+    $templateData['static'] = 1;
     $template->fromArray($templateData);
     $templates[] = $template;
 }

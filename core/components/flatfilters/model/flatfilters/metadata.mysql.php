@@ -5,6 +5,5 @@ $xpdo_meta_map = array (
   array (
     0 => 'ffConfigResource',
     1 => 'ffConfiguration',
-    2 => 'ffIndex30',
   ),
 );

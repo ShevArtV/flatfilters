@@ -29,7 +29,7 @@ class FlatFilters
         $this->types = [];
 
         $this->modx->addPackage('migx', $this->core_path . 'components/migx/model/');
-        $this->modx->addPackage('flatfilters', MODX_BASE_PATH . 'core/components/flatfilters/model/');
+        $this->modx->addPackage('flatfilters', $this->core_path . 'components/flatfilters/model/');
 
         $this->pdoTools = $this->modx->getParser()->pdoTools;
         $this->ms2 = $this->modx->getService('miniShop2');
@@ -225,7 +225,7 @@ class FlatFilters
 
     public function removeResourceIndex(int $id)
     {
-        if($id === 0){
+        if ($id === 0) {
             return;
         }
         // удаляем индексы ресурса из всех конфигураций, к которым он принадлежит
@@ -371,6 +371,7 @@ class FlatFilters
     {
         $tpls = $this->modx->getOption('ff_tpls', '', '');
         $tpls = $tpls ? explode(',', $tpls) : [];
+        $totalVar = $this->modx->getPlaceholder($totalVar);
         if (in_array($tplId, $tpls)) {
             $jpPath = $this->modx->getOption('ff_js_path', '', 'assets/components/flatfilters/js/web/flatfilters.js');
             $time = time();
@@ -382,8 +383,54 @@ class FlatFilters
     {
         $jsConfigPath = $this->modx->getOption('ff_js_config_path', '', './flatfilters.inc.js');
         $cookies = $_COOKIE['FlatFilters'] ? json_decode($_COOKIE['FlatFilters'], 1) : [];
-        $data = ['jsConfigPath' => $jsConfigPath, 'presets' => $this->presets];
+        $data = [
+            'jsConfigPath' => $jsConfigPath,
+            'presets' => $this->presets,
+        ];
         $data = array_merge($cookies, $data);
         setcookie('FlatFilters', json_encode($data), 0, '/');
+    }
+
+    public function setPaginationParams(array $params)
+    {
+        $result = $this->getFilterResult($params);
+        $getDisabled = $_SESSION['flatfilters'][$params['configId']]['getDisabled'];
+
+        if ($getDisabled) {
+            $_REQUEST['resultShowMethod'] = 'insert';
+        }
+        $params[$result['resourcesProp']] = $result['ids'] ?: 9999999999999;
+        $params['sortby'] = $result['sortby'] ?: [];
+        $params['filtersHash'] = $_SESSION['flatfilters'][$params['configId']]['hash'];
+        $params['upd'] = (bool)$_REQUEST['upd'];
+        $params['offset'] = 0;
+        return $params;
+    }
+
+    public function setResponseParams(array $params)
+    {
+        $params['getDisabled'] = $_SESSION['flatfilters'][$params['configId']]['getDisabled'];
+        $params['totalTime'] = $_SESSION['flatfilters'][$params['configId']]['totalTime'];
+        return $params;
+    }
+
+    public function getFilterResult(array $params)
+    {
+        $configId = $params['configId'];
+        if (!$configId || !($config = $this->modx->getObject('ffConfiguration', $configId))) {
+            $this->modx->log(1, $this->modx->lexicon('ff_err_config_id', ['configId' => $configId]));
+            return [];
+        }
+
+        $params['presetName'] = $this->modx->getOption('ff_preset_name', '', 'flatfilters');
+        $params['upd'] = $_REQUEST['upd'];
+        $configData = $config->toArray();
+        $configData['scriptProperties'] = $params;
+        $FF = $this->modx->getService('flatfilters', 'FlatFilters', MODX_CORE_PATH . 'components/flatfilters/');
+        if (!$Filtering = $FF->loadClass($configData, 'filtering')) {
+            return false;
+        }
+
+        return $Filtering->run();
     }
 }

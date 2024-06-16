@@ -33,7 +33,7 @@ foreach($realPlugins as $realPlugin){
     $pluginData = $realPlugin->toArray();
     $pluginData['id'] = 0;
     //TODO remove comment if you want make your plugin static
-    //$pluginData['static'] = 1;
+    $pluginData['static'] = 1;
     $plugin->fromArray($pluginData);
     $plugin->addMany($pluginEvents);
     $plugins[] = $plugin;

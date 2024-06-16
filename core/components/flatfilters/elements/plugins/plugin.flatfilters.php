@@ -1,14 +1,22 @@
 <?php
-
 $FF = $modx->getService('flatfilters', 'Flatfilters', MODX_CORE_PATH . 'components/flatfilters/');
 
 switch ($modx->event->name) {
     case 'OnGetFormParams':
-        if (in_array($presetName, $FF->presets)) {
-            $modx->event->returnedValues = $FF->getFormParams();
+        if ($presetName === $FF->presets['disabling'] || $presetName === $FF->presets['total']) {
+            $SendIt->pluginParams = $FF->getFormParams();
         }
         break;
-
+    case 'OnBeforePageRender':
+        if($SendIt->params['configId']){
+            $SendIt->params = $FF->setPaginationParams($SendIt->params);
+        }
+        break;
+    case 'OnBeforeReturnResponse':
+        if($SendIt->params['configId']){
+            $SendIt->params = $FF->setResponseParams($SendIt->params);
+        }
+        break;
     case 'OnDocFormSave':
     case 'OnResourceUndelete':
         $FF->removeResourceIndex($id);
@@ -18,6 +26,7 @@ switch ($modx->event->name) {
         break;
 
     case 'OnUserSave':
+    case 'OnUserRemoveFromGroup':
         if($user){
             $FF->removeResourceIndex($user->get('id'));
             $FF->indexingUser($user);

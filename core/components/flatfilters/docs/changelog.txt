@@ -1,3 +1,7 @@
+1.0.0-pl
+==============
+- Добавил системное событие ffOnBeforeSetIndexValue.
+
 1.0.0-rc5
 ==============
 - Добавил системное событие ffOnAfterGetFilterValues.
