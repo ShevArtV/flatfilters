@@ -451,28 +451,23 @@ export default class MainHandler {
     }
 
     getElemType(elem) {
-        let type = 'text';
-        switch (elem.tagName) {
-            case 'INPUT':
+        switch (elem.tagName.toLowercase()) {
+            case 'input':
                 const startFieldSelector = FlatFilters?.RangeSlider?.config.startFieldSelector.replace('="${key}"', '');
                 const endFieldSelector = FlatFilters?.RangeSlider?.config.endFieldSelector.replace('="${key}"', '');
-                const pickerSelector = FlatFilters?.DatePicker?.config.pickerSelector;
                 if (elem.closest(startFieldSelector) || elem.closest(endFieldSelector)) {
-                    type = 'numrange';
+                    return 'numrange';
                 }
+
+                const pickerSelector = FlatFilters?.DatePicker?.config.pickerSelector;
                 if (elem.closest(pickerSelector)) {
-                    type = 'daterange';
-                }
-                (type === 'text') && (type = elem.type);
-                break;
-            case 'SELECT':
-                if (elem.multiple) {
-                    type = 'multiple';
-                } else {
-                    type = 'select'
+                    return 'daterange';
                 }
                 break;
+            case 'select':
+                return elem.multiple ? 'multiple' : 'select';
+
         }
-        return type;
+        return elem.type;
     }
 }
