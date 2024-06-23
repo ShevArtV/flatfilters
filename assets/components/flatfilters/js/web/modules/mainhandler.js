@@ -451,7 +451,7 @@ export default class MainHandler {
     }
 
     getElemType(elem) {
-        switch (elem.tagName.toLowercase()) {
+        switch (elem.tagName.toLowerCase()) {
             case 'input':
                 const startFieldSelector = FlatFilters?.RangeSlider?.config.startFieldSelector.replace('="${key}"', '');
                 const endFieldSelector = FlatFilters?.RangeSlider?.config.endFieldSelector.replace('="${key}"', '');
