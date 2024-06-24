@@ -110,7 +110,7 @@ class FlatFilters
             'salt'
         ];
         $output = [];
-        $sql = "SHOW FIELDS FROM {$this->tablePrefix}{$tableName}";
+        $sql = "SHOW FIELDS FROM `{$this->tablePrefix}{$tableName}`";
         $tstart = microtime(true);
         if ($statement = $this->modx->query($sql)) {
             $this->modx->queryTime += microtime(true) - $tstart;
@@ -143,7 +143,7 @@ class FlatFilters
         $profiles = $this->modx->getIterator('modUserProfile');
         $extendFields = $output = [];
         foreach ($profiles as $profile) {
-            $extended = $profile->get('extended');
+            $extended = $profile->get('extended') ?? [];
             $extendFields = array_merge($extendFields, array_keys($extended));
         }
         $extendFields = array_unique($extendFields);
