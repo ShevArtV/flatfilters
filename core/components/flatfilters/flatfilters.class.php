@@ -1,17 +1,17 @@
 <?php
 
-
 class FlatFilters
 {
-    public ModX $modx;
-    public $pdoTools;
-    public $ms2;
+    public modX $modx;
+    public pdoTools $pdoTools;
+    public miniShop2 $ms2;
     public string $core_path;
     public string $tpls;
     public string $tablePrefix;
     public array $types;
     public array $presets;
-
+    public array $resourceTypes;
+    public array $userTypes;
 
     public function __construct($modx)
     {
@@ -23,6 +23,10 @@ class FlatFilters
     {
         $this->core_path = $this->modx->getOption('core_path');
         $this->tpls = $this->modx->getOption('ff_allowed_tpls', '', false);
+        $resourceTypes = $this->modx->getOption('ff_resource_types', '', 'resources,products');
+        $this->resourceTypes = explode(',', $resourceTypes);
+        $userTypes = $this->modx->getOption('ff_user_types', '', 'customers');
+        $this->userTypes = explode(',', $userTypes);
         $this->tablePrefix = $this->modx->getOption('table_prefix');
         $presets = $this->modx->getOption('ff_preset_names', '', '{"filtering":"flatfilters", "pagination":"ff_pagination", "disabling":"ff_disabling"}');
         $this->presets = json_decode($presets, 1);
@@ -296,12 +300,16 @@ class FlatFilters
     public function indexingDocument(modResource $resource): void
     {
         $parents = $this->getParents($resource->get('id'), $resource->get('parent'), $resource->get('class_key'));
-        $configs = $this->modx->getIterator('ffConfiguration', ['type:IN' => ['resources', 'products']]);
+        $configs = $this->modx->getIterator('ffConfiguration', ['type:IN' => $this->resourceTypes]);
         foreach ($configs as $config) {
             if (!$Indexing = $this->loadClass($config->toArray(), 'indexing')) {
                 continue;
             }
-            $resourceData = $Indexing->getResourceData($resource);
+
+            if(!$resourceData = $Indexing->getResourceData($resource)){
+                continue;
+            }
+
             if ($configParents = $config->get('parents')) {
                 $configParents = explode(',', $configParents);
                 foreach ($configParents as $configParent) {
@@ -317,7 +325,7 @@ class FlatFilters
 
     public function indexingUser(modUser $user): void
     {
-        $configs = $this->modx->getIterator('ffConfiguration', ['type' => 'customers']);
+        $configs = $this->modx->getIterator('ffConfiguration', ['type:IN' => $this->userTypes]);
         $profile = $user->getOne('Profile');
         $profileData = $profile->toArray();
         $extended = $profileData['extended'];

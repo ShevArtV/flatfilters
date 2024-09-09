@@ -34,6 +34,10 @@ $_lang['setting_ff_show_groups_panel_for'] = 'Показывать панель 
 $_lang['setting_ff_show_groups_panel_for_desc'] = 'указывает для каких типов конфигураций показывать панель выбора группы пользователей.';
 $_lang['setting_ff_path_to_types'] = 'Путь к файлу с перечислением доступных типов конфигураций';
 $_lang['setting_ff_path_to_types_desc'] = 'указывается относительно папки core/';
+$_lang['setting_ff_resource_types'] = 'Список типов конфигурацмй для ресурсов';
+$_lang['setting_ff_resource_types_desc'] = 'по умолчанию: resources,products';
+$_lang['setting_ff_user_types'] = 'Список типов конфигурацмй для пользователей';
+$_lang['setting_ff_user_types_desc'] = 'по умолчанию: customers';
 
 $_lang['menu_ff_main_item'] = 'Фильтрация';
 $_lang['ff_title_manage'] = 'Управление конфигурацией';
