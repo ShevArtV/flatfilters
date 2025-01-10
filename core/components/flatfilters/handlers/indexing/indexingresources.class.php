@@ -150,15 +150,16 @@ class IndexingResources implements IndexingInterface
         $q->select($this->modx->getSelectColumns('modUser', 'modUser', '', $userExludeFields, true));
         $q->select($this->modx->getSelectColumns('modUserProfile', 'Profile', '', ['id', 'sessionid'], true));
         $q->where(['modUser.id' => $user_id]);
-
+        $q->prepare();
         $tstart = microtime(true);
-        if ($q->prepare() && $q->stmt->execute()) {
+        if ($q->stmt->execute()) {
             $this->modx->queryTime += microtime(true) - $tstart;
             $this->modx->executedQueries++;
-            $output = $q->stmt->fetch(PDO::FETCH_ASSOC);
-            $extended = $output['extended'] ? json_decode($output['extended'], 1) : [];
-            $output = array_merge($output, $extended);
-            unset($output['id'], $output['extended']);
+            if($result = $q->stmt->fetch(PDO::FETCH_ASSOC)){
+                $extended = $result['extended'] ? json_decode($result['extended'], 1) : [];
+                $output = array_merge($result, $extended);
+                unset($output['id'], $output['extended']);
+            }
         }
 
         return $output;

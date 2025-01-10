@@ -222,6 +222,7 @@ export default class MainHandler {
 
 
     async sendResponse(preset) {
+        if(!this.form) return;
         if (preset !== this.presets.disabling) {
             this.setHistory();
         }
@@ -279,7 +280,7 @@ export default class MainHandler {
         }
 
         this.timeBlock && result.data.totalTime && (this.timeBlock.textContent = result.data.totalTime);
-        const totalCount = result.data[this.totalBlock.dataset[this.config.totalKey]] || 0;
+        const totalCount = this.totalBlock ? result.data[this.totalBlock.dataset[this.config.totalKey]] : 0;
         this.totalBlock && (this.totalBlock.textContent = totalCount);
     }
 

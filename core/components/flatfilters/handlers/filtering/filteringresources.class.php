@@ -11,6 +11,7 @@ class FilteringResources implements FilteringInterface
     protected array $properties;
     public array $filters;
     protected array $defaultFilters;
+    public array $excludeFilters;
     public array $values = [];
     public array $tokens = [];
     protected string $tablePrefix;
@@ -38,6 +39,7 @@ class FilteringResources implements FilteringInterface
         $this->tableName = $this->modx->getTableName('ffIndex' . $this->configData['id']) ?: '';
         $this->configData['scriptProperties']['parents'] = $this->configData['parents'] ?: 0;
         $this->properties = $this->configData['scriptProperties'];
+        $this->excludeFilters = $this->properties['excludeFilters'] ? explode(',', $this->properties['excludeFilters']) : [];
         $this->filters = json_decode($this->configData['filters'], true) ?: [];
         $this->defaultFilters = json_decode($this->configData['default_filters'], true) ?: [];
         $this->limit = (int)$this->modx->getOption('limit', $this->properties, 10);
@@ -54,6 +56,12 @@ class FilteringResources implements FilteringInterface
                 $this->properties['sortby'] = json_decode($this->properties['sortby'], true) ?: [];
             }
             $this->properties['sortby'] = array_merge([$sortby[0] => $sortby[1]], $this->properties['sortby']??[]);
+        }
+
+        if(!empty($this->excludeFilters)){
+            foreach ($this->excludeFilters as $key){
+                unset($this->filters[$key]);
+            }
         }
 
         $filtersKeys = array_keys($this->filters);
@@ -110,6 +118,7 @@ class FilteringResources implements FilteringInterface
         $getDisabled = 0;
         $rids = $_SESSION['flatfilters'][$this->configData['id']]['rids'];
         if (!$rids || $_SESSION['flatfilters'][$this->configData['id']]['hash'] !== $hash || $upd) {
+            $this->offset = 0;
             $rids = $this->filter();
 
             $this->modx->invokeEvent('ffOnAfterFilter', [
@@ -117,7 +126,10 @@ class FilteringResources implements FilteringInterface
                 'rids' => $rids
             ]);
             $rids = $this->modx->event->returnedValues['rids'] ?? $rids;
-
+            if(isset($this->modx->event->returnedValues['rids'])){
+                $ids = !empty($this->modx->event->returnedValues['rids']) ? explode(',', $this->modx->event->returnedValues['rids']) : [];
+                $_SESSION['flatfilters'][$this->configData['id']][$this->totalVar] = count($ids);
+            }
             $_SESSION['flatfilters'][$this->configData['id']]['hash'] = $hash;
             $_SESSION['flatfilters'][$this->configData['id']]['rids'] = $rids;
 
@@ -265,7 +277,7 @@ class FilteringResources implements FilteringInterface
             $sql .= $this->getSortby();
         }
 
-        $sql .= " LIMIT {$this->limit} OFFSET {$this->offset}";
+        $sql .= " LIMIT $this->limit OFFSET $this->offset";
         /* получаем список id для отображения на странице */
         if ($statement = $this->execute($sql)) {
             $rids = $statement->fetchAll(PDO::FETCH_COLUMN);
@@ -356,12 +368,11 @@ class FilteringResources implements FilteringInterface
                 $item['props'] = $scriptProperties;
                 if (is_array($item['values'])) {
                     $chunk = $scriptProperties["{$key}TplRow"] ?? $scriptProperties["defaultTplRow"];
-                    if (!$chunk) {
-                        continue;
-                    }
-                    foreach ($item['values'] as $idx => $value) {
-                        $params = array_merge($scriptProperties, ['key' => $key, 'value' => $value, 'idx' => $idx]);
-                        $item['options'] .= $this->pdoTools->parseChunk($chunk, $params);
+                    if ($chunk) {
+                        foreach ($item['values'] as $idx => $value) {
+                            $params = array_merge($scriptProperties, ['key' => $key, 'value' => $value, 'idx' => $idx]);
+                            $item['options'] .= $this->pdoTools->parseChunk($chunk, $params);
+                        }
                     }
                 }
                 $chunk = $scriptProperties["{$key}TplOuter"] ?? $scriptProperties["defaultTplOuter"];
