@@ -379,10 +379,8 @@ class FlatFilters
     {
         $tpls = $this->modx->getOption('ff_tpls', '', '');
         $tpls = $tpls ? explode(',', $tpls) : [];
-        $totalVar = $this->modx->getPlaceholder($totalVar);
         if (in_array($tplId, $tpls)) {
             $jpPath = $this->modx->getOption('ff_js_path', '', 'assets/components/flatfilters/js/web/flatfilters.js');
-            $time = time();
             $this->modx->regClientScript("<script type=\"module\" src=\"{$jpPath}\"></script>", 1);
         }
     }

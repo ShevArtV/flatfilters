@@ -2,6 +2,7 @@
 // /usr/local/php/php-7.4/bin/php -d display_errors -d error_reporting=E_ALL art-sites.ru/htdocs/flatfilters/modxbuilder/flatfilters/build/build.schema.php
 // /usr/local/php/php-7.4/bin/php -d display_errors -d error_reporting=E_ALL art-sites.ru/htdocs/flatfilters/modxbuilder/flatfilters/build/build.models.php
 // /usr/local/php/php-7.4/bin/php -d display_errors -d error_reporting=E_ALL art-sites.ru/htdocs/flatfilters/modxbuilder/flatfilters/build/build.package.php
+// /usr/local/php/php-7.4/bin/php -d display_errors -d error_reporting=E_ALL modxbuilder/flatfilters/build/build.package.php
 //If you need to update only builder component files - set COMPONENT_BUILD to true.
 define("COMPONENT_BUILD", true);
 
@@ -14,7 +15,7 @@ $buildConfig = array(
     "real_package_name" => "FlatFilters",
     //name for folder
     "package_name" => "flatfilters",
-    "package_version" => "1.0.3",
+    "package_version" => "1.0.4",
     "package_release" => "pl",
     "package_table_prefix" => "ff_",
     "package_class_prefix" => "ff",

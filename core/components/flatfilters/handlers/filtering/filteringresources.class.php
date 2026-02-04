@@ -55,11 +55,11 @@ class FilteringResources implements FilteringInterface
             if (is_string($this->properties['sortby'])) {
                 $this->properties['sortby'] = json_decode($this->properties['sortby'], true) ?: [];
             }
-            $this->properties['sortby'] = array_merge([$sortby[0] => $sortby[1]], $this->properties['sortby']??[]);
+            $this->properties['sortby'] = array_merge([$sortby[0] => $sortby[1]], $this->properties['sortby'] ?? []);
         }
 
-        if(!empty($this->excludeFilters)){
-            foreach ($this->excludeFilters as $key){
+        if (!empty($this->excludeFilters)) {
+            foreach ($this->excludeFilters as $key) {
                 unset($this->filters[$key]);
             }
         }
@@ -126,13 +126,12 @@ class FilteringResources implements FilteringInterface
                 'rids' => $rids
             ]);
             $rids = $this->modx->event->returnedValues['rids'] ?? $rids;
-            if(isset($this->modx->event->returnedValues['rids'])){
+            if (isset($this->modx->event->returnedValues['rids'])) {
                 $ids = !empty($this->modx->event->returnedValues['rids']) ? explode(',', $this->modx->event->returnedValues['rids']) : [];
                 $_SESSION['flatfilters'][$this->configData['id']][$this->totalVar] = count($ids);
             }
             $_SESSION['flatfilters'][$this->configData['id']]['hash'] = $hash;
             $_SESSION['flatfilters'][$this->configData['id']]['rids'] = $rids;
-
             $getDisabled = $this->properties['noDisabled'] ? 0 : 1;
         }
 
@@ -309,12 +308,15 @@ class FilteringResources implements FilteringInterface
         return $sortStr;
     }
 
-    public function getAllFiltersValues(): array
+    public function getAllFiltersValues(string $rids = ''): array
     {
         $output = [];
         $where = '';
         $defaultFilterKeys = $this->defaultFilters ? array_keys($this->defaultFilters) : [];
         $conditions = [];
+        if($rids){
+            $conditions[] = "rid IN ($rids)";
+        }
         if (!empty($this->defaultFilters)) {
             $this->tokens = [];
             foreach ($this->defaultFilters as $k => $data) {
@@ -423,80 +425,6 @@ class FilteringResources implements FilteringInterface
 
     public function getCurrentFiltersValues(): array
     {
-        $output = [];
-        $defaultFilterKeys = $this->defaultFilters ? array_keys($this->defaultFilters) : [];
-        $result = $this->prepareCurrentFiltersKeys($defaultFilterKeys);
-
-        if (!empty($result['minMaxKeys'])) {
-            $output = $this->getMinMaxValues($result['minMaxKeys'], $output);
-        }
-
-        if (!empty($result['distinctKeys'])) {
-            $output = $this->getDistinctValues($result['distinctKeys'], $output);
-        }
-
-        return $output;
-    }
-
-    protected function prepareCurrentFiltersKeys($defaultFilterKeys): array
-    {
-        $output = [
-            'distinctKeys' => [],
-            'minMaxKeys' => [],
-        ];
-
-        foreach ($this->filters as $key => $value) {
-            if (in_array($key, $defaultFilterKeys)) {
-                continue;
-            }
-            if (strpos($value['filter_type'], 'range') === false) {
-                $output['distinctKeys'][] = $key;
-            } else {
-                $output['minMaxKeys'][] = "MIN(`{$key}`) as {$key}__min, MAX(`{$key}`) as {$key}__max";
-            }
-        }
-
-        return $output;
-    }
-
-    protected function getMinMaxValues($minMaxKeys, $output): array
-    {
-        $where = $_SESSION['flatfilters'][$this->configData['id']]['rids'];
-
-        $sqlMinMax = implode(', ', $minMaxKeys);
-        $sql = "SELECT {$sqlMinMax} FROM {$this->tableName}";
-        if ($where) {
-            $sql .= " WHERE `rid` IN ({$where})";
-        }
-
-        if ($statement = $this->execute($sql)) {
-            $result = $statement->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($result[0] as $k => $v) {
-                $parts = explode('__', $k);
-                $output[$parts[0]][$parts[1]] = $_SESSION['flatfilters'][$this->configData['id']]['properties']['ranges'][$parts[0]][$parts[1]] = $v ?: 0;
-                $output[$parts[0]]['type'] = $this->filters[$parts[0]]['filter_type'] ?: 'string';
-            }
-        }
-        return $output;
-    }
-
-    protected function getDistinctValues($distinctKeys, $output): array
-    {
-        $where = $_SESSION['flatfilters'][$this->configData['id']]['rids'];
-        $values = [];
-
-        foreach ($distinctKeys as $key) {
-            $sql = "SELECT DISTINCT `{$key}` FROM {$this->tableName}";
-            if ($where) {
-                $sql .= " WHERE `rid` IN ({$where})";
-            }
-
-            if ($statement = $this->execute($sql)) {
-                $values[$key]['values'] = $statement->fetchAll(PDO::FETCH_COLUMN);
-                $values[$key]['type'] = $this->filters[$key]['filter_type'] ?: 'string';
-            }
-        }
-
-        return array_merge($output, $values);
+        return $this->getAllFiltersValues($_SESSION['flatfilters'][$this->configData['id']]['rids']);
     }
 }

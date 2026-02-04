@@ -26,7 +26,7 @@ export default function returnConfigs() {
             maxKey: 'ffMax'
         },
         MainHandler: {
-            pathToScripts: './modules/mainhandler.js?v=565ghf657546754',
+            pathToScripts: './modules/mainhandler.js?v=565ghf65754675476867822222',
             sendEvent: 'si:send:finish',
             beforeSendEvent: 'si:send:before',
             formSelector: '[data-ff-form]',
