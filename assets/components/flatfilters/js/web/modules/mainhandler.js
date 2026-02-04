@@ -22,6 +22,7 @@ export default class MainHandler {
       hideClass: 'v_hidden',
     }
     this.events = {
+      resetBefore: 'ff:before:reset',
       reset: 'ff:after:reset',
       remove: 'ff:before:remove',
       render: 'ff:before:render',
@@ -104,6 +105,14 @@ export default class MainHandler {
 
   async reset() {
     const filters = document.querySelectorAll(this.config.filtersSelector);
+
+    document.dispatchEvent(new CustomEvent(this.events.resetBefore, {
+      bubbles: true,
+      cancelable: false,
+      detail: {filters}
+    }))
+
+
     filters.forEach(filter => {
       const type = this.getElemType(filter);
       switch (type) {
