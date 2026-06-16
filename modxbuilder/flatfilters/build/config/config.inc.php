@@ -15,7 +15,7 @@ $buildConfig = array(
     "real_package_name" => "FlatFilters",
     //name for folder
     "package_name" => "flatfilters",
-    "package_version" => "1.0.5",
+    "package_version" => "1.0.6",
     "package_release" => "pl",
     "package_table_prefix" => "ff_",
     "package_class_prefix" => "ff",

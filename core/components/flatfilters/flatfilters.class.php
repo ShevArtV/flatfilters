@@ -12,6 +12,8 @@ class FlatFilters
     public array $presets;
     public array $resourceTypes;
     public array $userTypes;
+    /** @var ffLogger Логирование через mxLogger (единственный приёмник). */
+    public $logger;
 
     public function __construct($modx)
     {
@@ -38,6 +40,9 @@ class FlatFilters
         $this->pdoTools = $this->modx->getParser()->pdoTools;
         $this->ms2 = $this->modx->getService('miniShop2');
 
+        require_once $this->core_path . 'components/flatfilters/ffLogger.class.php';
+        $this->logger = new ffLogger($this->modx);
+
         $this->loadLexicons();
         $this->getTypes();
     }
@@ -60,7 +65,7 @@ class FlatFilters
             }
             return true;
         }
-        $this->modx->log(1, "[FlatFilters::getTypes] Файл {$pathToTypes} не найден");
+        $this->logger->write("Файл типов конфигураций не найден: {$pathToTypes}", ['path' => $pathToTypes], 'error', 'config');
         return false;
     }
 
@@ -357,16 +362,16 @@ class FlatFilters
     {
         $type = $configData['type'];
         if (!$type) {
-            $this->modx->log(1, 'Не указан тип объекта.');
+            $this->logger->write('Не указан тип объекта', ['method' => $method], 'error', 'config');
             return false;
         }
         if (!$this->types[$type]) {
-            $this->modx->log(1, "Не указан класс-обработчик типа {$type}");
+            $this->logger->write("Не указан класс-обработчик типа {$type}", ['type' => $type, 'method' => $method], 'error', 'config');
             return false;
         }
         $pathToClass = MODX_CORE_PATH . $this->types[$type][$method]['path'];
         if (!file_exists($pathToClass)) {
-            $this->modx->log(1, "Файл класса-обработчика не найден.");
+            $this->logger->write('Файл класса-обработчика не найден', ['type' => $type, 'method' => $method, 'path' => $pathToClass], 'error', 'config');
             return false;
         }
 
@@ -424,7 +429,7 @@ class FlatFilters
     {
         $configId = $params['configId'];
         if (!$configId || !($config = $this->modx->getObject('ffConfiguration', $configId))) {
-            $this->modx->log(1, $this->modx->lexicon('ff_err_config_id', ['configId' => $configId]));
+            $this->logger->write($this->modx->lexicon('ff_err_config_id', ['configId' => $configId]), ['configId' => $configId], 'error', 'filter');
             return [];
         }
 

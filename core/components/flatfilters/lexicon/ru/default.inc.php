@@ -16,6 +16,11 @@ $_lang['ff_frontend_modifications_value'] = 'Модификация';
 $_lang['ff_frontend_modifications_remains'] = 'Остаток';
 $_lang['ff_frontend_pagetitle'] = 'Заголовок';
 
+$_lang['setting_ff_debug'] = 'Логирование';
+$_lang['setting_ff_debug_desc'] = 'Логи пишутся в mxLogger (единственный приёмник). По умолчанию: Да (логирование включено).';
+$_lang['setting_ff_log_level'] = 'Минимальный уровень логирования';
+$_lang['setting_ff_log_level_desc'] = 'Записи ниже уровня не пишутся: debug, info, warning, error. По умолчанию: error. Требует mxLogger.';
+
 $_lang['setting_ff_preset_names'] = 'Имя  используемых пресетов';
 $_lang['setting_ff_preset_names_desc'] = 'по умолчанию {"filtering":"flatfilters", "pagination":"ff_pagination", "disabling":"ff_disabling"}';
 $_lang['setting_ff_connector'] = 'Имя сниппета-коннектора';
