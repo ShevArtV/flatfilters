@@ -12,7 +12,9 @@ export default class RangeSlider {
             startFieldSelector: '[data-ff-start="${key}"]',
             endFieldSelector: '[data-ff-end="${key}"]',
             minKey: 'ffMin',
-            maxKey: 'ffMax'
+            maxKey: 'ffMax',
+            touchedKey: 'ffTouched',
+            sendEvent: 'si:send:finish'
         }
 
         this.config = Object.assign(defaults, config);
@@ -72,6 +74,44 @@ export default class RangeSlider {
                 this.createRange(el);
             });
         }
+
+        // При фильтрации сервер пересчитывает min/max по выборке и присылает их
+        // в filterValues (disabling-ответ). Подхватываем и сужаем границы слайдера.
+        document.addEventListener(this.config.sendEvent, (e) => {
+            const filterValues = e.detail?.result?.data?.filterValues;
+            if (!filterValues) return;
+            Object.entries(filterValues).forEach(([key, item]) => {
+                if (item && typeof item.type === 'string' && item.type.includes('range')
+                    && item.min != null && item.max != null) {
+                    this.updateRange(key, Number(item.min), Number(item.max));
+                }
+            });
+        });
+    }
+
+    /**
+     * Обновить границы слайдера под новую выборку, сохранив выбор пользователя.
+     * Если ручки стояли на краях (пользователь не сужал) — растягиваем на новый
+     * диапазон; иначе прижимаем текущий выбор к новым границам.
+     */
+    updateRange(key, newMin, newMax) {
+        const rangeSelector = this.config.rangeSelectorAlt.replace('${key}', key);
+        const el = document.querySelector(rangeSelector);
+        if (!el || !el.noUiSlider) return;
+        if (!Number.isFinite(newMin) || !Number.isFinite(newMax)) return;
+        // noUiSlider требует min < max строго
+        if (newMax <= newMin) newMax = newMin + 1;
+
+        const touched = !!el.dataset[this.config.touchedKey];
+        const [curStart, curEnd] = el.noUiSlider.get().map(Number);
+
+        // Границы приходят посчитанными БЕЗ собственного фильтра (сервер), поэтому
+        // сужать себя они не могут. Нетронутый слайдер прижимаем ручки к краям
+        // (показ доступного), тронутый — сохраняем выбор пользователя внутри границ.
+        el.noUiSlider.updateOptions({ range: { min: newMin, max: newMax } }, false);
+        const start = touched ? Math.max(newMin, Math.min(curStart, newMax)) : newMin;
+        const end = touched ? Math.min(newMax, Math.max(curEnd, newMin)) : newMax;
+        el.noUiSlider.set([start, end], false);
     }
 
     createRange(el) {
@@ -90,11 +130,13 @@ export default class RangeSlider {
 
         startField.addEventListener('change', (e) => {
             if (e.isTrusted) {
+                el.dataset[this.config.touchedKey] = '1';
                 el.noUiSlider.set([startField.value, null]);
             }
         });
         endField.addEventListener('change', (e) => {
             if (e.isTrusted) {
+                el.dataset[this.config.touchedKey] = '1';
                 el.noUiSlider.set([null, endField.value]);
             }
         });
@@ -106,6 +148,7 @@ export default class RangeSlider {
 
         el.noUiSlider.on('change', (values, handle) => {
             SendIt?.setComponentCookie('sitrusted', '1')
+            el.dataset[this.config.touchedKey] = '1';
             if (handle === 1) {
                 endField.dispatchEvent(new Event('change', {bubbles: true}));
             } else {
@@ -128,6 +171,7 @@ export default class RangeSlider {
 
     reset(key) {
         const {el, min, max} = this.getItems(key);
+        delete el.dataset[this.config.touchedKey];
         el.noUiSlider.set([min, max]);
     }
 }

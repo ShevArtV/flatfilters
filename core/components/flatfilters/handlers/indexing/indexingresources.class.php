@@ -198,12 +198,22 @@ class IndexingResources implements IndexingInterface
     {
         $keys = ['rid'];
         foreach ($filters as $key => $data) {
-            if (!isset($resourceData[$key]) && strpos($key, '_') !== false) {
-                $keyParts = explode('_', $key);
-                $keys[] = $keyParts[0];
-            } else {
+            $key = (string)$key;
+            if (isset($resourceData[$key])) {
                 $keys[] = $key;
+                continue;
             }
+            // MIGX-подполе имеет вид {tvName}_{field}, но имя TV само может содержать
+            // подчёркивания (fft_specs -> fft_specs_size), поэтому explode('_')[0] неверен.
+            // Ищем ключ данных, который является префиксом и держит MIGX-массив.
+            $matched = null;
+            foreach ($resourceData as $rk => $rv) {
+                if (is_array($rv) && strpos($key, $rk . '_') === 0) {
+                    $matched = (string)$rk;
+                    break;
+                }
+            }
+            $keys[] = $matched !== null ? $matched : $key;
         }
         return $keys;
     }

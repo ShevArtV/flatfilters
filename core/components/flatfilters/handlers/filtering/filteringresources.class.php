@@ -208,11 +208,13 @@ class FilteringResources implements FilteringInterface
                 }
                 $keyStart = $key . '_start';
                 $keyEnd = $key . '_end';
-                $this->tokens[$keyStart] = $value[0];
-                $this->tokens[$keyEnd] = $value[1];
                 if (strpos($type, 'date') !== false) {
-                    $this->tokens[$keyStart] = strtotime($value[0]);
-                    $this->tokens[$keyEnd] = strtotime($value[1]);
+                    list($startTs, $endTs) = $this->normalizeDateRange($value[0] ?? '', $value[1] ?? '');
+                    $this->tokens[$keyStart] = $startTs;
+                    $this->tokens[$keyEnd] = $endTs;
+                } else {
+                    $this->tokens[$keyStart] = $value[0] ?? null;
+                    $this->tokens[$keyEnd] = $value[1] ?? null;
                 }
                 $condition = " {$keyStr} >= :{$keyStart} AND {$keyStr} <= :{$keyEnd} ";
                 break;
@@ -270,11 +272,20 @@ class FilteringResources implements FilteringInterface
 
     protected function getOutputIds(string $rids): string
     {
+        $orderBy = isset($this->properties['sortby']) ? $this->getSortby() : '';
         $sql = $this->getOutputSQL($rids);
 
-        if (isset($this->properties['sortby'])) {
-            $sql .= $this->getSortby();
+        // Сортировка по колонке индексной таблицы требует её джойна: в output-SQL есть
+        // только site_content (`Resource`). Для resources в индексе одна строка на rid.
+        if (strpos($orderBy, '`Idx`.') !== false) {
+            $sql = str_replace(
+                ' WHERE ',
+                " LEFT JOIN {$this->tableName} Idx ON Idx.rid = `Resource`.`id` WHERE ",
+                $sql
+            );
         }
+
+        $sql .= $orderBy;
 
         $sql .= " LIMIT $this->limit OFFSET $this->offset";
         /* получаем список id для отображения на странице */
@@ -294,54 +305,128 @@ class FilteringResources implements FilteringInterface
 
     protected function getSortby(): string
     {
-        /* готовим условия сортировки результатов фильтрации */
+        /* готовим условия сортировки; ключ пропускаем через whitelist — без него
+           значение из $_REQUEST['sortby'] уходило в ORDER BY сырым (SQL-инъекция) */
         $sortby = [];
-        $sortStr = " ORDER BY id";
         $sort = is_array($this->properties['sortby']) ? $this->properties['sortby'] : json_decode($this->properties['sortby'], 1);
-        foreach ($sort as $key => $dir) {
-            $sortby[] = "{$key} {$dir}";
+        $allowed = $this->getAllowedSortKeys();
+        foreach ((array)$sort as $key => $dir) {
+            if (!is_string($key) || !in_array($key, $allowed, true)) {
+                continue;
+            }
+            $sortby[] = $this->mapSortKey($key) . ' ' . $this->normalizeDirection($dir);
         }
-        if (!empty($sortby)) {
-            $sortStr = " ORDER BY " . implode(',', $sortby);
-        }
+        return !empty($sortby) ? ' ORDER BY ' . implode(',', $sortby) : ' ORDER BY `Resource`.`id`';
+    }
 
-        return $sortStr;
+    /**
+     * Границы диапазона дат -> пара timestamp'ов. Начало — 00:00:00 своего дня,
+     * конец — 23:59:59 (иначе запись, созданная днём, не попадёт в «по эту дату»).
+     * Если передана только одна граница — диапазон трактуется как весь этот день.
+     */
+    protected function normalizeDateRange($startRaw, $endRaw): array
+    {
+        $start = trim((string)$startRaw);
+        $end = trim((string)$endRaw);
+        if ($start === '') {
+            $start = $end;
+        }
+        if ($end === '') {
+            $end = $start;
+        }
+        $startTs = $start !== '' ? strtotime($start) : false;
+        $endTs = $end !== '' ? strtotime($end) : false;
+        return [
+            $startTs !== false ? (int)strtotime(date('Y-m-d', $startTs) . ' 00:00:00') : 0,
+            $endTs !== false ? (int)strtotime(date('Y-m-d', $endTs) . ' 23:59:59') : PHP_INT_MAX,
+        ];
+    }
+
+    protected function normalizeDirection($dir): string
+    {
+        $up = is_string($dir) ? strtoupper($dir) : '';
+        return ($up === 'ASC' || $up === 'DESC') ? $up : 'ASC';
+    }
+
+    protected function isValidColumn($name): bool
+    {
+        return is_string($name) && (bool)preg_match('/^[A-Za-z_][A-Za-z0-9_]{0,63}$/', $name);
+    }
+
+    /**
+     * Ключ сортировки → безопасное SQL-выражение. Ключи уже прошли whitelist.
+     */
+    protected function mapSortKey(string $key): string
+    {
+        if ($key === 'id') {
+            return '`Resource`.`id`';
+        }
+        if ($key === 'rid') {
+            return '`Idx`.`rid`';
+        }
+        if (strpos($key, 'Resource.') === 0) {
+            return '`Resource`.`' . substr($key, 9) . '`';
+        }
+        if (isset($this->filters[$key])) {
+            // колонка индексной таблицы — getOutputIds добавит JOIN Idx
+            return "`Idx`.`{$key}`";
+        }
+        return '`Resource`.`id`';
+    }
+
+    /**
+     * Разрешённые ключи сортировки: имена фильтров (колонки индекса), id/rid и колонки
+     * site_content с префиксом Resource. (например Resource.publishedon — «сначала новые»).
+     */
+    protected function getAllowedSortKeys(): array
+    {
+        $keys = [];
+        foreach (array_keys($this->filters) as $k) {
+            if ($this->isValidColumn($k)) {
+                $keys[] = $k;
+            }
+        }
+        $keys[] = 'id';
+        $keys[] = 'rid';
+        foreach ($this->getTableColumns($this->tablePrefix . 'site_content') as $col) {
+            $keys[] = 'Resource.' . $col;
+        }
+        return array_values(array_unique($keys));
+    }
+
+    protected static array $tableColumnsCache = [];
+
+    protected function getTableColumns(string $tableName): array
+    {
+        if (isset(self::$tableColumnsCache[$tableName])) {
+            return self::$tableColumnsCache[$tableName];
+        }
+        $columns = [];
+        if ($statement = $this->modx->query("SHOW FIELDS FROM `{$tableName}`")) {
+            foreach ($statement->fetchAll(PDO::FETCH_COLUMN) as $col) {
+                if ($this->isValidColumn($col)) {
+                    $columns[] = $col;
+                }
+            }
+        }
+        return self::$tableColumnsCache[$tableName] = $columns;
     }
 
     public function getAllFiltersValues(string $rids = ''): array
     {
         $output = [];
-        $where = '';
         $defaultFilterKeys = $this->defaultFilters ? array_keys($this->defaultFilters) : [];
-        $conditions = [];
-        if($rids){
-            $conditions[] = "rid IN ($rids)";
-        }
-        if (!empty($this->defaultFilters)) {
-            $this->tokens = [];
-            foreach ($this->defaultFilters as $k => $data) {
-                if (!isset($data['value'])) {
-                    continue;
-                }
-                $conditions[] = $this->getCondition($k, $data['value'], $data['filter_type']);
-            }
-        }
-
-        $this->modx->invokeEvent('ffOnBeforeGetFilterValues', [
-            'configData' => $this->configData,
-            'conditions' => $conditions,
-            'FlatFilters' => $this
-        ]);
-        $conditions = is_array($this->modx->event->returnedValues['conditions']) ? $this->modx->event->returnedValues['conditions'] : $conditions;
-
-        if ($conditions) {
-            $where = implode('AND ', $conditions);
-        }
 
         foreach ($this->filters as $key => $value) {
             if (in_array($key, $defaultFilterKeys)) {
                 continue;
             }
+            // Фасет «excluding self»: доступные значения фильтра считаем по СТРОКАМ
+            // индекса, прошедшим все ОСТАЛЬНЫЕ активные фильтры, но не сам этот фильтр.
+            // Это (а) не блокирует уже выбранную группу, (б) корректно для MIGX (у rid
+            // несколько строк — rid IN показал бы значения из строк, не прошедших другие
+            // фильтры), (в) по индексу колонки, а не полный скан от большого rid IN.
+            $where = $this->buildFacetWhere((string)$key);
             if (strpos($value['filter_type'], 'range') === false) {
                 $output = $this->getNoRangeValues($where, $key, $value, $output);
             } else {
@@ -359,6 +444,43 @@ class FilteringResources implements FilteringInterface
         $_SESSION['flatfilters'][$this->configData['id']]['properties']['all_ranges'] = $output;
 
         return $output;
+    }
+
+    /**
+     * WHERE-условия всех активных фильтров (пользовательских + дефолтных) КРОМЕ $exceptKey.
+     * Накапливает плейсхолдеры в $this->tokens (сбрасывает перед построением).
+     */
+    protected function buildFacetWhere(string $exceptKey): string
+    {
+        $this->tokens = [];
+        $conditions = [];
+        foreach ($this->filters as $k => $data) {
+            $k = (string)$k;
+            if ($k === $exceptKey) {
+                continue;
+            }
+            $value = isset($this->values[$k]) ? $this->values[$k] : null;
+            if ($value === null || $value === '' || $value === []) {
+                if (isset($this->defaultFilters[$k]['value'])) {
+                    $value = $this->defaultFilters[$k]['value'];
+                    $filterType = $this->defaultFilters[$k]['filter_type'] ?? '';
+                } else {
+                    continue;
+                }
+            } else {
+                $filterType = is_array($data) ? ($data['filter_type'] ?? '') : '';
+            }
+            $conditions[] = $this->getCondition($k, $value, $filterType);
+        }
+
+        $this->modx->invokeEvent('ffOnBeforeGetFilterValues', [
+            'configData' => $this->configData,
+            'conditions' => $conditions,
+            'FlatFilters' => $this
+        ]);
+        $conditions = is_array($this->modx->event->returnedValues['conditions']) ? $this->modx->event->returnedValues['conditions'] : $conditions;
+
+        return $conditions ? implode(' AND ', $conditions) : '';
     }
 
     public function renderFilterForm(array $scriptProperties, ?array $output = [])
@@ -425,6 +547,8 @@ class FilteringResources implements FilteringInterface
 
     public function getCurrentFiltersValues(): array
     {
-        return $this->getAllFiltersValues($_SESSION['flatfilters'][$this->configData['id']]['rids']);
+        // getAllFiltersValues сам считает каждый фильтр «excluding self» (buildFacetWhere):
+        // выбранная группа не блокируется, остальные сужаются по строкам, прошедшим её.
+        return $this->getAllFiltersValues();
     }
 }

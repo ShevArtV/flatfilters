@@ -411,6 +411,10 @@ class FlatFilters
             $_REQUEST['resultShowMethod'] = 'insert';
         }
         $params[$result['resourcesProp']] = $result['ids'] ?: 9999999999999;
+        // msProducts (miniShop2) не понимает FIELD-сортировку (даёт пустую выдачу),
+        // но принимает sortby по колонкам. Порядок уже задан getOutputIds (ORDER BY),
+        // а msProducts досортировывает тем же ключом — согласованно. Ключ фильтруется
+        // в getSortby (whitelist), так что инъекции в нашей выборке нет.
         $params['sortby'] = $result['sortby'] ?: [];
         $params['filtersHash'] = $_SESSION['flatfilters'][$params['configId']]['hash'];
         $params['upd'] = (bool)$_REQUEST['upd'];

@@ -234,14 +234,42 @@ export default class MainHandler {
     if (!this.form) return;
     if (preset !== this.presets.disabling) {
       this.setHistory();
+      // Фильтры изменились — начинаем с первой страницы, иначе в форме остаётся
+      // ffpage=N от пагинации, а сервер пересчитал выдачу с offset=0.
+      this.resetPagination();
     }
     const params = new FormData(this.form);
+    // Нетронутый слайдер не должен фильтровать: его границы динамически сужаются под
+    // выборку, «ручки на краях» — показ доступного, а не выбор диапазона.
+    this.stripUntouchedRanges(params);
+    // Антибот SendIt не перезаписывает isBot, если он уже в параметрах. Без этого
+    // быстрые клики по фильтрам без движения мыши ловят isBot=1 и «Если вы не робот».
+    params.set('isBot', '0');
     const onsend = [];
     for (const [key, value] of params.entries()) {
       onsend.push(key);
     }
     SendIt.setComponentCookie('sitrusted', '1');
     this.form && await SendIt.Sending.prepareSendParams(this.form, preset, params);
+  }
+
+  resetPagination() {
+    const pageInput = [...this.form.elements].find(
+      (el) => el.matches && el.matches('[data-pn-current]')
+    );
+    if (pageInput) {
+      pageInput.value = '1';
+    }
+  }
+
+  stripUntouchedRanges(params) {
+    document.querySelectorAll('[data-ff-range]').forEach((el) => {
+      const key = el.dataset.ffRange;
+      if (key && !el.dataset.ffTouched) {
+        params.delete(`${key}[]`);
+        params.delete(key);
+      }
+    });
   }
 
   setHistory() {
@@ -296,13 +324,12 @@ export default class MainHandler {
   }
 
   toggleVisabilityResetBtn() {
-    const getParams = window.location.search.replace('?', '').split('&');
-
-    if (!window.location.search || (window.location.search && getParams.length === 1 && window.location.search.indexOf('page') !== -1)) {
-      this.resetBtn && this.resetBtn.classList.add(this.config.hideClass);
-    } else {
-      window.location.search && this.resetBtn && this.resetBtn.classList.remove(this.config.hideClass);
-    }
+    if (!this.resetBtn) return;
+    // Кнопка «Сбросить фильтры» реагирует только на фильтры: сортировка и номер
+    // страницы — служебные параметры, выборку они не сужают.
+    const hasFilters = [...new URLSearchParams(window.location.search).keys()]
+      .some((key) => key !== 'sortby' && !key.endsWith('page'));
+    this.resetBtn.classList[hasFilters ? 'remove' : 'add'](this.config.hideClass);
   }
 
   setDisabled(filters, data) {
@@ -312,7 +339,10 @@ export default class MainHandler {
         const type = this.getElemType(el);
         const values = data.filterValues[key]['values'] || [];
         switch (type) {
+          // getElemType возвращает 'multiple' для <select multiple>, поэтому оба
+          // случая обрабатываем вместе — иначе опции мультиселекта не дизейблятся.
           case 'select':
+          case 'multiple':
             if (!values) break;
             for (let i = 1; i < el.options.length; i++) {
               el.options[i].disabled = !values.includes(el.options[i].value);
