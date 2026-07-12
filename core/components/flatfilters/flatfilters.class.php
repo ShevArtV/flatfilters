@@ -251,12 +251,25 @@ class FlatFilters
                 $statement = $this->modx->prepare($sql);
                 $statement->execute(['id' => $id]);
             }
+            // индекс конфига изменился — сбрасываем кэш facet пустой формы
+            $this->clearFacetCache((int)$config->get('id'));
         }
 
         // удаляем записи о принадлежности ресурса к определенным конфигурациям
         $sql = "DELETE FROM {$crTableName} WHERE `rid` = :id";
         $statement = $this->modx->prepare($sql);
         $statement->execute(['id' => $id]);
+    }
+
+    /**
+     * Сбрасывает кэш facet пустой формы. Вызывать при любом изменении индекса конфига
+     * (переиндексация ресурса/пользователя, полная переиндексация).
+     */
+    public function clearFacetCache(int $configId): void
+    {
+        if ($configId && $this->modx->getCacheManager()) {
+            $this->modx->cacheManager->delete('facet_empty_' . $configId, [xPDO::OPT_CACHE_KEY => 'flatfilters']);
+        }
     }
 
     public function getParents(int $id, int $parentId, string $classKey = 'modResource'): array

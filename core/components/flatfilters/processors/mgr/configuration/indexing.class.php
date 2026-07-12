@@ -47,9 +47,15 @@ class FlatFiltersConfigurationIndexingProcessor extends modProcessor
 
         $percent = $total ? round(($offset / $total) * 100) . '%' : '0%';
 
+        $finished = $offset >= $total;
+        if ($finished) {
+            // индекс перестроен — сбрасываем кэш facet пустой формы
+            $this->ff->clearFacetCache((int)$properties['id']);
+        }
+
         return $this->success('', [
             'id' => $properties['id'],
-            'finished' => $offset >= $total,
+            'finished' => $finished,
             'percent' => $percent,
             'action' => 'mgr/configuration/indexing'
         ]);

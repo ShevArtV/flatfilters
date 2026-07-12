@@ -414,6 +414,16 @@ class FilteringResources implements FilteringInterface
 
     public function getAllFiltersValues(string $rids = ''): array
     {
+        // Пустая форма (нет пользовательских фильтров): значения facet зависят только
+        // от индекса и префильтра, а не от запроса — считаем один раз и кэшируем.
+        // На каталоге 100K это снимает 9 полных сканов таблицы с каждого захода.
+        $emptyForm = empty($this->values);
+        if ($emptyForm && ($cached = $this->getFacetCache()) !== null) {
+            $this->restoreRangesToSession($cached);
+            $_SESSION['flatfilters'][$this->configData['id']]['properties']['all_ranges'] = $cached;
+            return $cached;
+        }
+
         $output = [];
         $defaultFilterKeys = $this->defaultFilters ? array_keys($this->defaultFilters) : [];
 
@@ -443,7 +453,70 @@ class FilteringResources implements FilteringInterface
 
         $_SESSION['flatfilters'][$this->configData['id']]['properties']['all_ranges'] = $output;
 
+        if ($emptyForm) {
+            $this->setFacetCache($output);
+        }
+
         return $output;
+    }
+
+    /**
+     * Ключ кэша facet пустой формы. Один ключ на конфиг; хэш filters+default_filters
+     * хранится внутри значения — при изменении настроек конфига кэш считается протухшим.
+     */
+    protected function getFacetCacheKey(): string
+    {
+        return 'facet_empty_' . $this->configData['id'];
+    }
+
+    protected function getFacetCacheOptions(): array
+    {
+        return [xPDO::OPT_CACHE_KEY => 'flatfilters'];
+    }
+
+    protected function getFacetConfigHash(): string
+    {
+        return md5(($this->configData['filters'] ?? '') . '|' . ($this->configData['default_filters'] ?? ''));
+    }
+
+    protected function getFacetCache(): ?array
+    {
+        if (!$this->modx->getCacheManager()) {
+            return null;
+        }
+        $cached = $this->modx->cacheManager->get($this->getFacetCacheKey(), $this->getFacetCacheOptions());
+        if (is_array($cached) && isset($cached['hash'], $cached['data']) && $cached['hash'] === $this->getFacetConfigHash()) {
+            return $cached['data'];
+        }
+        return null;
+    }
+
+    protected function setFacetCache(array $output): void
+    {
+        if (!$this->modx->getCacheManager()) {
+            return;
+        }
+        $payload = ['hash' => $this->getFacetConfigHash(), 'data' => $output];
+        $this->modx->cacheManager->set(
+            $this->getFacetCacheKey(),
+            $payload,
+            0,
+            $this->getFacetCacheOptions()
+        );
+    }
+
+    /**
+     * getRangeValues при живом расчёте кладёт min/max диапазонов в сессию (нужны для
+     * валидации границ слайдера в следующем запросе). При отдаче из кэша восстанавливаем.
+     */
+    protected function restoreRangesToSession(array $output): void
+    {
+        foreach ($output as $key => $item) {
+            if (isset($item['min']) || isset($item['max'])) {
+                $_SESSION['flatfilters'][$this->configData['id']]['properties']['ranges'][$key]['min'] = $item['min'] ?? 0;
+                $_SESSION['flatfilters'][$this->configData['id']]['properties']['ranges'][$key]['max'] = $item['max'] ?? 0;
+            }
+        }
     }
 
     /**
