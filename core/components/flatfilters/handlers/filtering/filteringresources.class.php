@@ -1,6 +1,7 @@
 <?php
 
 require_once 'filteringinterface.class.php';
+require_once MODX_CORE_PATH . 'components/flatfilters/ffLogger.class.php';
 
 class FilteringResources implements FilteringInterface
 {
@@ -22,6 +23,8 @@ class FilteringResources implements FilteringInterface
     protected int $total = 0;
     protected int $limit;
     protected int $offset;
+    /** @var ffLogger */
+    protected $logger;
 
     public function __construct($modx, $configData)
     {
@@ -32,6 +35,7 @@ class FilteringResources implements FilteringInterface
 
     protected function initialize(): void
     {
+        $this->logger = new ffLogger($this->modx);
         $this->modx->addPackage('flatfilters', MODX_BASE_PATH . 'core/components/flatfilters/model/');
         $this->pdoTools = $this->modx->getParser()->pdoTools;
         $this->tablePrefix = $this->modx->getOption('table_prefix');
@@ -79,6 +83,33 @@ class FilteringResources implements FilteringInterface
                     $this->values[$key] = $value;
                     if ($this->filters[$key]['filter_type'] === 'multiple' || $this->filters[$key]['filter_type'] === 'numrange') {
                         $this->values[$key] = !is_array($value) ? explode(',', $value) : $value;
+                    } elseif (is_array($value)) {
+                        /* Разметка name="key[]" (штатный чанк ffcheckboxgroup) — это
+                           множественный выбор, а тип фильтра в конфигурации говорит об
+                           одиночном. Раньше массив уходил в условие «= :key» и выдача
+                           молча становилась пустой: GET «key=1,2» работал, AJAX той же
+                           формы — нет. Приводим к списку и предупреждаем в логе. */
+                        $normalized = array_values(array_filter(
+                            $value,
+                            function ($v) { return $v !== '' && $v !== null; }
+                        ));
+                        if (!$normalized) {
+                            unset($this->values[$key]);
+                            continue;
+                        }
+                        $this->values[$key] = $normalized;
+                        $this->logger->write(
+                            "Фильтр «{$key}»: из запроса пришёл массив, а тип фильтра не «multiple». "
+                            . 'Значения приведены к списку (IN); проверьте тип фильтра в конфигурации.',
+                            [
+                                'configId' => $this->configData['id'] ?? null,
+                                'key' => $key,
+                                'filter_type' => $this->filters[$key]['filter_type'] ?? null,
+                                'values' => $normalized,
+                            ],
+                            'warning',
+                            'filter'
+                        );
                     }
                     if ($this->filters[$key]['filter_type'] === 'numrange') {
                         $start = explode('.', $this->values[$key][0]);
@@ -170,7 +201,7 @@ class FilteringResources implements FilteringInterface
 
         $conditions = [];
         foreach ($this->filters as $key => $data) {
-            $value = $this->values[$key] ?: $this->defaultFilters[$key]['value'];
+            $value = ($this->values[$key] ?? null) ?: ($this->defaultFilters[$key]['value'] ?? null);
             if (!isset($value)) {
                 continue;
             }
@@ -194,7 +225,7 @@ class FilteringResources implements FilteringInterface
 
     protected function getCondition($key, $value, $type): string
     {
-        $sign = $this->getCompareSign($key, $type);
+        $sign = $this->getCompareSign($key, $type, $value);
 
         $keyStr = "`{$key}`";
         if (in_array($type, ['number', 'numrange'])) {
@@ -223,6 +254,12 @@ class FilteringResources implements FilteringInterface
                 if (!is_array($value)) {
                     $value = explode(',', $value);
                 }
+                if (!$value) {
+                    /* «IN ()» — синтаксическая ошибка MySQL, весь запрос упал бы целиком.
+                       Пустой список значений не отбирает ничего — так и пишем. */
+                    return ' 1 = 0 ';
+                }
+                $tokens = [];
                 foreach ($value as $k => $v) {
                     $k = $key . '_' . $k;
                     $this->tokens[$k] = $v;
@@ -241,17 +278,23 @@ class FilteringResources implements FilteringInterface
         return $condition;
     }
 
-    protected function getCompareSign($key, $type): string
+    protected function getCompareSign($key, $type, $value = null): string
     {
         $sign = '=';
-        if ($this->defaultFilters[$key]) {
-            $sign = $this->defaultFilters[$key]['sign'];
+        if (!empty($this->defaultFilters[$key])) {
+            $sign = $this->defaultFilters[$key]['sign'] ?? '=';
         } else {
             if (strpos($type, 'range') !== false) {
                 $sign = 'BETWEEN';
             } elseif ($type === 'multiple') {
                 $sign = 'IN';
             }
+        }
+        /* Набор значений нельзя сравнивать одиночным знаком: PDO не биндит массив,
+           и выдача молча пустеет. Знак из конфигурации при этом сохраняем, если он уже
+           умеет работать со списком (IN) или диапазоном (BETWEEN). */
+        if (is_array($value) && !in_array($sign, ['IN', 'BETWEEN'], true)) {
+            $sign = 'IN';
         }
         return $sign;
     }
